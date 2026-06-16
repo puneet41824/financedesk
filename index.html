@@ -1,0 +1,2684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinanceDesk</title>
+<style>
+  :root {
+    --primary: #185FA5;
+    --primary-light: #E6F1FB;
+    --primary-dark: #0C447C;
+    --success: #3B6D11;
+    --success-light: #EAF3DE;
+    --warning: #854F0B;
+    --warning-light: #FAEEDA;
+    --danger: #A32D2D;
+    --danger-light: #FCEBEB;
+    --neutral: #5F5E5A;
+    --neutral-light: #F1EFE8;
+    --border: rgba(0,0,0,0.12);
+    --border-strong: rgba(0,0,0,0.25);
+    --bg: #ffffff;
+    --bg-secondary: #F8F7F4;
+    --bg-tertiary: #F1EFE8;
+    --text: #1a1a18;
+    --text-muted: #5F5E5A;
+    --text-hint: #888780;
+    --sidebar-w: 220px;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg-tertiary);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: #0C447C;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 100;
+  }
+
+  .sidebar-brand {
+    padding: 20px 16px 16px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.12);
+  }
+
+  .sidebar-brand h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+  }
+
+  .sidebar-brand p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+  }
+
+  .sidebar-section {
+    padding: 12px 0 4px;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 0 16px 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 16px;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    font-size: 13px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .nav-item:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ffffff;
+  }
+
+  .nav-item.active {
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+    border-left-color: #B5D4F4;
+  }
+
+  .nav-item .icon {
+    font-size: 15px;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 16px;
+    border-top: 0.5px solid rgba(255,255,255,0.12);
+  }
+
+  /* MAIN */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 24px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .content {
+    padding: 24px;
+    flex: 1;
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border-strong);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { background: var(--bg-secondary); }
+
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary-dark);
+  }
+
+  .btn-primary:hover { background: var(--primary-dark); }
+
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .btn-danger {
+    background: var(--danger-light);
+    color: var(--danger);
+    border-color: rgba(163,45,45,0.3);
+  }
+
+  .btn-danger:hover { background: #F7C1C1; }
+
+  /* CARDS */
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* METRIC CARDS */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .metric-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--text-hint);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-hint);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 0.5px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 0.5px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg-secondary); }
+
+  /* BADGES */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .badge-success { background: var(--success-light); color: var(--success); }
+  .badge-warning { background: var(--warning-light); color: var(--warning); }
+  .badge-danger { background: var(--danger-light); color: var(--danger); }
+  .badge-neutral { background: var(--neutral-light); color: var(--neutral); }
+  .badge-blue { background: var(--primary-light); color: var(--primary-dark); }
+
+  /* FORMS */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  input, select, textarea {
+    padding: 7px 10px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--bg);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(24,95,165,0.12);
+  }
+
+  textarea { resize: vertical; min-height: 70px; }
+
+  .form-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .form-row .form-group { flex: 1; min-width: 140px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+  }
+
+  .modal-header h3 { font-size: 14px; font-weight: 500; }
+
+  .modal-body { padding: 20px; }
+
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    position: sticky;
+    bottom: 0;
+    background: var(--bg);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .tab {
+    padding: 8px 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+    transition: all 0.12s;
+  }
+
+  .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 500;
+  }
+
+  .tab:hover { color: var(--text); }
+
+  /* AUTH SCREEN */
+  .auth-screen {
+    position: fixed;
+    inset: 0;
+    background: #0C447C;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .auth-card {
+    background: white;
+    border-radius: 16px;
+    padding: 40px;
+    width: 380px;
+    text-align: center;
+  }
+
+  .auth-card h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .auth-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 11px 20px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    width: 100%;
+    font-family: inherit;
+    transition: background 0.12s;
+  }
+
+  .google-btn:hover { background: var(--bg-secondary); }
+
+  .config-section {
+    margin-top: 20px;
+    text-align: left;
+  }
+
+  .config-section label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 5px;
+  }
+
+  .config-section input {
+    width: 100%;
+    padding: 7px 10px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: inherit;
+  }
+
+  /* SETUP GUIDE */
+  .setup-step {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .setup-step:last-child { border-bottom: none; }
+
+  .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .step-content h4 { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .step-content p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .step-content code {
+    background: var(--bg-secondary);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: monospace;
+    color: var(--primary-dark);
+  }
+
+  /* PAGE SECTIONS */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-bar input, .filter-bar select {
+    width: auto;
+    min-width: 120px;
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-hint);
+  }
+
+  .empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-state p { font-size: 13px; }
+
+  /* INVOICE BREAKDOWN */
+  .breakdown-box {
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-top: 12px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+
+  .breakdown-row.total {
+    border-top: 0.5px solid var(--border-strong);
+    margin-top: 6px;
+    padding-top: 8px;
+    font-weight: 500;
+  }
+
+  .breakdown-label { color: var(--text-muted); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--text);
+    color: white;
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.2s;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* LOADING */
+  .loading {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; }
+  }
+
+  /* SECTION HEADER */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .section-header h2 {
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .text-right { text-align: right; }
+  .text-muted { color: var(--text-muted); }
+  .text-success { color: var(--success); }
+  .text-danger { color: var(--danger); }
+  .text-warning { color: var(--warning); }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-20 { margin-top: 20px; }
+  .gap-8 { gap: 8px; }
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .w-full { width: 100%; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 16px 0; }
+
+  .amount-positive { color: var(--success); font-weight: 500; }
+  .amount-negative { color: var(--danger); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div style="font-size:32px; margin-bottom:12px;">💼</div>
+    <h2>FinanceDesk</h2>
+    <p>Your private company financials — stored securely in your own Google Sheet. No servers. No team access.</p>
+
+    <div class="config-section">
+      <label>Google Sheet ID</label>
+      <input type="text" id="sheetIdInput" placeholder="Paste your Google Sheet ID here" style="margin-bottom:10px;">
+      <label style="margin-top:8px;">Google OAuth Client ID</label>
+      <input type="text" id="clientIdInput" placeholder="your-client-id.apps.googleusercontent.com">
+    </div>
+
+    <button class="google-btn" onclick="startAuth()" style="margin-top:16px;" id="authBtn">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/><path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/><path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/><path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/></svg>
+      Sign in with Google
+    </button>
+
+    <div style="margin-top:20px; padding-top:16px; border-top:0.5px solid var(--border);">
+      <details>
+        <summary style="font-size:12px; color:var(--text-muted); cursor:pointer; margin-bottom:10px;">Setup guide — first time?</summary>
+        <div>
+          <div class="setup-step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h4>Create a Google Sheet</h4>
+              <p>Go to sheets.google.com → New sheet. Copy the ID from the URL: <code>docs.google.com/spreadsheets/d/<strong>THIS_PART</strong>/edit</code></p>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h4>Get OAuth Client ID</h4>
+              <p>Go to <code>console.cloud.google.com</code> → APIs & Services → Credentials → Create OAuth 2.0 Client ID. Add <code>file://</code> and your local URL as authorised origins.</p>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h4>Enable Sheets API</h4>
+              <p>In Google Cloud Console → Enable APIs → Google Sheets API. Also enable Google Drive API.</p>
+            </div>
+          </div>
+          <div class="setup-step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <h4>Paste & Sign in</h4>
+              <p>Paste your Sheet ID and Client ID above, then click Sign in. Sheets will be auto-created on first run.</p>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <h1>FinanceDesk</h1>
+    <p id="companyName">Company Financials</p>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Overview</div>
+    <div class="nav-item active" onclick="navigate('dashboard')">
+      <span class="icon">⊞</span> Dashboard
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Transactions</div>
+    <div class="nav-item" onclick="navigate('clients')">
+      <span class="icon">👥</span> Clients
+    </div>
+    <div class="nav-item" onclick="navigate('invoices')">
+      <span class="icon">📄</span> Invoices
+    </div>
+    <div class="nav-item" onclick="navigate('expenses')">
+      <span class="icon">💸</span> Expenses
+    </div>
+    <div class="nav-item" onclick="navigate('payments')">
+      <span class="icon">🏦</span> Payments
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Planning</div>
+    <div class="nav-item" onclick="navigate('receivables')">
+      <span class="icon">🔮</span> Future Receivables
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Reports</div>
+    <div class="nav-item" onclick="navigate('pl')">
+      <span class="icon">📊</span> P&L
+    </div>
+    <div class="nav-item" onclick="navigate('reports')">
+      <span class="icon">📋</span> Auditor Reports
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div style="font-size:11px; color:rgba(255,255,255,0.35);" id="userEmail">Not signed in</div>
+    <div class="nav-item" onclick="signOut()" style="padding:6px 0; margin-top:4px;">
+      <span class="icon">↩</span> Sign out
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-actions" id="topbarActions"></div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="metrics-grid" id="dashMetrics">
+        <div class="metric-card">
+          <div class="metric-label">Total Invoiced (FY)</div>
+          <div class="metric-value" id="m-invoiced">—</div>
+          <div class="metric-sub">Current financial year</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Invoices Pending</div>
+          <div class="metric-value" id="m-inv-pending">—</div>
+          <div class="metric-sub">Unpaid + partial</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Total Expenses (FY)</div>
+          <div class="metric-value" id="m-expenses">—</div>
+          <div class="metric-sub">Current financial year</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Future Receivables</div>
+          <div class="metric-value" id="m-future">—</div>
+          <div class="metric-sub">Expected, not invoiced</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Recent Invoices</div>
+            <button class="btn btn-sm" onclick="navigate('invoices')">View all</button>
+          </div>
+          <div id="dash-recent-invoices"><div class="empty-state"><p>Loading...</p></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Upcoming Receivables</div>
+            <button class="btn btn-sm" onclick="navigate('receivables')">View all</button>
+          </div>
+          <div id="dash-receivables"><div class="empty-state"><p>Loading...</p></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENTS -->
+    <div class="page" id="page-clients">
+      <div class="filter-bar">
+        <input type="text" placeholder="Search clients..." id="clientSearch" oninput="renderClients()" style="min-width:200px;">
+        <select id="clientFilter" onchange="renderClients()">
+          <option value="">All types</option>
+          <option value="domestic">Domestic</option>
+          <option value="international">International</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Client Name</th>
+                <th>GST Number</th>
+                <th>State / Country</th>
+                <th>GST Type</th>
+                <th>TDS Rate</th>
+                <th>Type</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="clientsTable">
+              <tr><td colspan="7"><div class="empty-state"><p>Loading clients...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVOICES -->
+    <div class="page" id="page-invoices">
+      <div class="filter-bar">
+        <input type="text" placeholder="Search invoices..." id="invSearch" oninput="renderInvoices()">
+        <select id="invStatusFilter" onchange="renderInvoices()">
+          <option value="">All status</option>
+          <option value="Unpaid">Unpaid</option>
+          <option value="Partial">Partially paid</option>
+          <option value="Paid">Paid</option>
+        </select>
+        <select id="invClientFilter" onchange="renderInvoices()">
+          <option value="">All clients</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Currency</th>
+                <th>Base Amount</th>
+                <th>Tax</th>
+                <th>TDS</th>
+                <th>Net Receivable</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="invoicesTable">
+              <tr><td colspan="10"><div class="empty-state"><p>Loading invoices...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPENSES -->
+    <div class="page" id="page-expenses">
+      <div class="filter-bar">
+        <input type="text" placeholder="Search expenses..." id="expSearch" oninput="renderExpenses()">
+        <select id="expStatusFilter" onchange="renderExpenses()">
+          <option value="">All status</option>
+          <option value="Unpaid">Unpaid</option>
+          <option value="Partial">Partially paid</option>
+          <option value="Paid">Paid</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Vendor / Payee</th>
+                <th>Currency</th>
+                <th>Amount</th>
+                <th>GST (ITC)</th>
+                <th>TDS Deducted</th>
+                <th>Net Payable</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="expensesTable">
+              <tr><td colspan="10"><div class="empty-state"><p>Loading expenses...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="page" id="page-payments">
+      <div class="tabs">
+        <div class="tab active" onclick="switchPayTab('all', this)">All Payments</div>
+        <div class="tab" onclick="switchPayTab('untagged', this)">Needs Tagging</div>
+        <div class="tab" onclick="switchPayTab('inward', this)">Inward</div>
+        <div class="tab" onclick="switchPayTab('outward', this)">Outward</div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th>Amount (INR)</th>
+                <th>Tagged To</th>
+                <th>Tag</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTable">
+              <tr><td colspan="7"><div class="empty-state"><p>Loading payments...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- FUTURE RECEIVABLES -->
+    <div class="page" id="page-receivables">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Description</th>
+                <th>Expected Amount</th>
+                <th>Expected Date</th>
+                <th>Currency</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="receivablesTable">
+              <tr><td colspan="6"><div class="empty-state"><p>Loading...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- P&L -->
+    <div class="page" id="page-pl">
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <select id="plFromMonth">
+          <option value="4">Apr</option><option value="5">May</option>
+          <option value="6">Jun</option><option value="7">Jul</option>
+          <option value="8">Aug</option><option value="9">Sep</option>
+          <option value="10">Oct</option><option value="11">Nov</option>
+          <option value="12">Dec</option><option value="1">Jan</option>
+          <option value="2">Feb</option><option value="3">Mar</option>
+        </select>
+        <select id="plFromYear" style="width:90px;"></select>
+        <span style="color:var(--text-muted); font-size:12px;">to</span>
+        <select id="plToMonth">
+          <option value="4">Apr</option><option value="5">May</option>
+          <option value="6">Jun</option><option value="7">Jul</option>
+          <option value="8">Aug</option><option value="9">Sep</option>
+          <option value="10">Oct</option><option value="11">Nov</option>
+          <option value="12">Dec</option><option value="1">Jan</option>
+          <option value="2">Feb</option><option value="3">Mar</option>
+        </select>
+        <select id="plToYear" style="width:90px;"></select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);">
+          <input type="checkbox" id="includeFuture"> Include future receivables
+        </label>
+        <button class="btn btn-primary" onclick="renderPL()">Generate</button>
+      </div>
+
+      <div class="metrics-grid" id="plMetrics"></div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px;">
+        <div class="card" id="plRevenueCard">
+          <div class="card-title" style="margin-bottom:12px;">Revenue</div>
+          <div id="plRevenueItems"></div>
+        </div>
+        <div class="card" id="plExpenseCard">
+          <div class="card-title" style="margin-bottom:12px;">Expenses</div>
+          <div id="plExpenseItems"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page" id="page-reports">
+      <div class="card" style="max-width:480px;">
+        <div class="card-title" style="margin-bottom:16px;">Monthly Auditor Report</div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group">
+            <label>Month</label>
+            <select id="reportMonth">
+              <option value="1">January</option><option value="2">February</option>
+              <option value="3">March</option><option value="4">April</option>
+              <option value="5">May</option><option value="6">June</option>
+              <option value="7">July</option><option value="8">August</option>
+              <option value="9">September</option><option value="10">October</option>
+              <option value="11">November</option><option value="12">December</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Year</label>
+            <select id="reportYear" style="width:100%;"></select>
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">The report will contain:</p>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+            <div>📄 Sheet 1 — GST collected on invoices (CGST, SGST, IGST)</div>
+            <div>📄 Sheet 2 — GST paid on expenses (Input Tax Credit)</div>
+            <div>📄 Sheet 3 — TDS deducted by clients on your invoices</div>
+            <div>📄 Sheet 4 — TDS deducted by you on vendor payments</div>
+            <div>📄 Sheet 5 — Invoice summary for the month</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="generateReport()" style="margin-top:20px; width:100%;" id="reportBtn">
+          Generate & Download Excel Report
+        </button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- CLIENT MODAL -->
+<div class="modal-overlay" id="clientModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="clientModalTitle">Add Client</h3>
+      <button class="btn btn-sm" onclick="closeModal('clientModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Client Name *</label>
+          <input type="text" id="c-name" placeholder="Acme Corp">
+        </div>
+        <div class="form-group">
+          <label>Client Type *</label>
+          <select id="c-type" onchange="toggleClientFields()">
+            <option value="domestic">Domestic (India)</option>
+            <option value="international">International</option>
+          </select>
+        </div>
+        <div class="form-group" id="c-gst-group">
+          <label>GST Number</label>
+          <input type="text" id="c-gst" placeholder="27AAPFU0939F1ZV">
+        </div>
+        <div class="form-group" id="c-state-group">
+          <label>State *</label>
+          <select id="c-state">
+            <option value="Karnataka">Karnataka</option>
+            <option value="Maharashtra">Maharashtra</option>
+            <option value="Delhi">Delhi</option>
+            <option value="Tamil Nadu">Tamil Nadu</option>
+            <option value="Telangana">Telangana</option>
+            <option value="Gujarat">Gujarat</option>
+            <option value="Rajasthan">Rajasthan</option>
+            <option value="West Bengal">West Bengal</option>
+            <option value="Uttar Pradesh">Uttar Pradesh</option>
+            <option value="Punjab">Punjab</option>
+            <option value="Haryana">Haryana</option>
+            <option value="Kerala">Kerala</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group" id="c-country-group" style="display:none;">
+          <label>Country *</label>
+          <input type="text" id="c-country" placeholder="United States">
+        </div>
+        <div class="form-group">
+          <label>City</label>
+          <input type="text" id="c-city" placeholder="Bengaluru">
+        </div>
+        <div class="form-group">
+          <label>Contact Person</label>
+          <input type="text" id="c-contact" placeholder="John Doe">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="c-email" placeholder="john@acme.com">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" id="c-phone" placeholder="+91 98765 43210">
+        </div>
+        <div class="form-group" id="c-gst-applies-group">
+          <label>GST Applicable</label>
+          <select id="c-gst-applies">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>TDS Rate</label>
+          <select id="c-tds-rate">
+            <option value="0">0% (No TDS)</option>
+            <option value="2">2%</option>
+            <option value="10">10%</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="c-notes" placeholder="Any additional info..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('clientModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveClient()" id="saveClientBtn">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="invoiceModalTitle">Add Invoice</h3>
+      <button class="btn btn-sm" onclick="closeModal('invoiceModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Invoice Number *</label>
+          <input type="text" id="i-num" placeholder="INV/2025-26/001">
+        </div>
+        <div class="form-group">
+          <label>Invoice Date *</label>
+          <input type="date" id="i-date">
+        </div>
+        <div class="form-group full">
+          <label>Client *</label>
+          <select id="i-client" onchange="onInvoiceClientChange()">
+            <option value="">Select client...</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Description</label>
+          <input type="text" id="i-desc" placeholder="Services for April 2025">
+        </div>
+        <div class="form-group">
+          <label>Currency *</label>
+          <select id="i-currency" onchange="calcInvoice()">
+            <option value="INR">INR ₹</option>
+            <option value="USD">USD $</option>
+            <option value="SGD">SGD S$</option>
+            <option value="EUR">EUR €</option>
+            <option value="GBP">GBP £</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Base Amount (excl. tax) *</label>
+          <input type="number" id="i-base" placeholder="100000" oninput="calcInvoice()" min="0">
+        </div>
+      </div>
+
+      <div class="breakdown-box" id="invoiceBreakdown" style="display:none;">
+        <div style="font-size:11px; font-weight:600; color:var(--text-hint); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Tax Breakdown</div>
+        <div class="breakdown-row"><span class="breakdown-label">Base Amount</span><span id="bd-base">—</span></div>
+        <div class="breakdown-row" id="bd-cgst-row"><span class="breakdown-label">CGST (9%)</span><span id="bd-cgst">—</span></div>
+        <div class="breakdown-row" id="bd-sgst-row"><span class="breakdown-label">SGST (9%)</span><span id="bd-sgst">—</span></div>
+        <div class="breakdown-row" id="bd-igst-row"><span class="breakdown-label">IGST (18%)</span><span id="bd-igst">—</span></div>
+        <div class="breakdown-row total"><span>Invoice Total</span><span id="bd-total">—</span></div>
+        <hr class="divider">
+        <div class="breakdown-row"><span class="breakdown-label">TDS Deducted by Client</span><span id="bd-tds" class="text-danger">—</span></div>
+        <div class="breakdown-row total"><span>Net Receivable</span><span id="bd-net" class="text-success">—</span></div>
+        <div style="margin-top:8px; padding:6px 8px; background:var(--primary-light); border-radius:4px; font-size:11px; color:var(--primary-dark);" id="bd-gst-type">—</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('invoiceModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveInvoice()" id="saveInvoiceBtn">Save Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXPENSE MODAL -->
+<div class="modal-overlay" id="expenseModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="expenseModalTitle">Add Expense</h3>
+      <button class="btn btn-sm" onclick="closeModal('expenseModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="e-date">
+        </div>
+        <div class="form-group">
+          <label>Category *</label>
+          <input type="text" id="e-cat" placeholder="e.g. Salary, Software, Travel">
+        </div>
+        <div class="form-group">
+          <label>Vendor / Payee</label>
+          <input type="text" id="e-vendor" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label>PAN (for TDS)</label>
+          <input type="text" id="e-pan" placeholder="ABCDE1234F">
+        </div>
+        <div class="form-group full">
+          <label>Description</label>
+          <input type="text" id="e-desc" placeholder="What is this expense for?">
+        </div>
+        <div class="form-group">
+          <label>Currency</label>
+          <select id="e-currency">
+            <option value="INR">INR ₹</option>
+            <option value="USD">USD $</option>
+            <option value="SGD">SGD S$</option>
+            <option value="EUR">EUR €</option>
+            <option value="GBP">GBP £</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (excl. tax) *</label>
+          <input type="number" id="e-amount" placeholder="50000" oninput="calcExpense()" min="0">
+        </div>
+        <div class="form-group">
+          <label>GST Rate (ITC)</label>
+          <select id="e-gst-rate" onchange="calcExpense()">
+            <option value="0">0% (No GST)</option>
+            <option value="18">18%</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>TDS Rate (you deduct)</label>
+          <select id="e-tds-rate" onchange="calcExpense()">
+            <option value="0">0% (No TDS)</option>
+            <option value="2">2%</option>
+            <option value="10">10%</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="breakdown-box" id="expenseBreakdown" style="display:none;">
+        <div style="font-size:11px; font-weight:600; color:var(--text-hint); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Payment Breakdown</div>
+        <div class="breakdown-row"><span class="breakdown-label">Base Amount</span><span id="ebd-base">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">GST (ITC claimable)</span><span id="ebd-gst" class="text-success">—</span></div>
+        <div class="breakdown-row total"><span>Total Invoice Value</span><span id="ebd-total">—</span></div>
+        <hr class="divider">
+        <div class="breakdown-row"><span class="breakdown-label">TDS Deducted (your liability)</span><span id="ebd-tds" class="text-danger">—</span></div>
+        <div class="breakdown-row total"><span>Net You Pay Vendor</span><span id="ebd-net" class="text-success">—</span></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('expenseModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveExpense()" id="saveExpenseBtn">Save Expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Payment</h3>
+      <button class="btn btn-sm" onclick="closeModal('paymentModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="p-date">
+        </div>
+        <div class="form-group">
+          <label>Type *</label>
+          <select id="p-type" onchange="onPaymentTypeChange()">
+            <option value="Inward">Inward (received)</option>
+            <option value="Outward">Outward (paid)</option>
+            <option value="Loan">Loan</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Description *</label>
+          <input type="text" id="p-desc" placeholder="Payment description / bank narration">
+        </div>
+        <div class="form-group">
+          <label>Amount (INR) *</label>
+          <input type="number" id="p-amount" placeholder="0" min="0">
+        </div>
+        <div class="form-group" id="p-person-group" style="display:none;">
+          <label>Person Name (Loan)</label>
+          <input type="text" id="p-person" placeholder="Name of lender/borrower">
+        </div>
+        <div class="form-group" id="p-ref-group">
+          <label>Reference / UTR</label>
+          <input type="text" id="p-ref" placeholder="Bank reference number">
+        </div>
+      </div>
+
+      <div id="p-tagging-section" style="margin-top:16px;">
+        <div style="font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:10px;">Tag to Invoice(s) / Expense(s)</div>
+        <div id="p-tag-items" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="btn btn-sm" onclick="addTagRow()" style="margin-top:8px;" id="addTagBtn">+ Add tag</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('paymentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePayment()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIVABLE MODAL -->
+<div class="modal-overlay" id="receivableModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h3>Add Future Receivable</h3>
+      <button class="btn btn-sm" onclick="closeModal('receivableModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Client Name *</label>
+          <input type="text" id="r-client" placeholder="Client name">
+        </div>
+        <div class="form-group full">
+          <label>Description *</label>
+          <input type="text" id="r-desc" placeholder="What is this for?">
+        </div>
+        <div class="form-group">
+          <label>Currency</label>
+          <select id="r-currency">
+            <option value="INR">INR ₹</option>
+            <option value="USD">USD $</option>
+            <option value="SGD">SGD S$</option>
+            <option value="EUR">EUR €</option>
+            <option value="GBP">GBP £</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Expected Amount *</label>
+          <input type="number" id="r-amount" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>Expected Date</label>
+          <input type="date" id="r-date">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input type="text" id="r-notes" placeholder="Any notes...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('receivableModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReceivable()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════════════════════════
+const DISCOVERY_DOCS = ['https://sheets.googleapis.com/$discovery/rest?version=v4'];
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+
+let CLIENT_ID = '';
+let SHEET_ID = '';
+let tokenClient;
+let isSignedIn = false;
+let currentPage = 'dashboard';
+let editingId = null;
+let payTagRows = [];
+
+// In-memory data store
+let DATA = {
+  clients: [],
+  invoices: [],
+  expenses: [],
+  payments: [],
+  receivables: []
+};
+
+// Sheet names
+const SHEETS = {
+  clients: 'Clients',
+  invoices: 'Invoices',
+  expenses: 'Expenses',
+  payments: 'Payments',
+  receivables: 'FutureReceivables'
+};
+
+// Sheet headers
+const HEADERS = {
+  clients: ['ID','Name','Type','GSTNumber','State','Country','City','ContactPerson','Email','Phone','GSTApplicable','TDSRate','Notes'],
+  invoices: ['ID','InvoiceNumber','Date','ClientID','ClientName','Description','Currency','BaseAmount','GSTType','CGSTRate','SGSTRate','IGSTRate','CGSTAmount','SGSTAmount','IGSTAmount','TotalTax','InvoiceTotal','TDSRate','TDSAmount','NetReceivable','Status','IsExport','Notes'],
+  expenses: ['ID','Date','Category','Vendor','PAN','Description','Currency','BaseAmount','GSTRate','GSTAmount','TDSRate','TDSAmount','TotalPayable','NetPayable','Status','Notes'],
+  payments: ['ID','Date','Description','Type','AmountINR','Reference','PersonName','Tags','Status'],
+  receivables: ['ID','ClientName','Description','Currency','Amount','ExpectedDate','Notes','CreatedAt']
+};
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
+function loadGIS() {
+  return new Promise((resolve) => {
+    if (window.google && window.google.accounts) return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = resolve;
+    document.head.appendChild(s);
+  });
+}
+
+async function startAuth() {
+  CLIENT_ID = document.getElementById('clientIdInput').value.trim();
+  SHEET_ID = document.getElementById('sheetIdInput').value.trim();
+
+  if (!CLIENT_ID || !SHEET_ID) {
+    showToast('Please enter both Sheet ID and OAuth Client ID');
+    return;
+  }
+
+  localStorage.setItem('fd_client_id', CLIENT_ID);
+  localStorage.setItem('fd_sheet_id', SHEET_ID);
+
+  await loadGIS();
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp) => {
+      if (resp.error) { showToast('Auth failed: ' + resp.error); return; }
+      isSignedIn = true;
+      document.getElementById('authScreen').style.display = 'none';
+      await initSheets();
+      await loadAllData();
+      renderPage();
+    }
+  });
+
+  tokenClient.requestAccessToken();
+}
+
+function signOut() {
+  google.accounts.oauth2.revoke(gapi && gapi.client && gapi.client.getToken() && gapi.client.getToken().access_token, () => {});
+  isSignedIn = false;
+  document.getElementById('authScreen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════════════════
+// SHEETS API
+// ═══════════════════════════════════════════════════════
+async function sheetsRequest(method, path, body) {
+  const token = google.accounts.oauth2.initTokenClient && gapi.client.getToken();
+  const accessToken = token ? token.access_token : null;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}${path}`;
+  const opts = {
+    method,
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  return res.json();
+}
+
+async function getSheetsList() {
+  const data = await sheetsRequest('GET', '');
+  return (data.sheets || []).map(s => s.properties.title);
+}
+
+async function createSheet(name, headers) {
+  // Add sheet
+  await sheetsRequest('POST', ':batchUpdate', {
+    requests: [{ addSheet: { properties: { title: name } } }]
+  });
+  // Add headers
+  await sheetsRequest('PUT', `/values/${encodeURIComponent(name)}!A1`, {
+    range: `${name}!A1`,
+    valueInputOption: 'RAW',
+    values: [headers]
+  });
+}
+
+async function initSheets() {
+  const existing = await getSheetsList();
+  for (const [key, name] of Object.entries(SHEETS)) {
+    if (!existing.includes(name)) {
+      await createSheet(name, HEADERS[key]);
+    }
+  }
+  // Remove default Sheet1 if exists and we just created
+  if (existing.includes('Sheet1') && existing.length === 1) {
+    const info = await sheetsRequest('GET', '');
+    const sheet1 = info.sheets.find(s => s.properties.title === 'Sheet1');
+    if (sheet1) {
+      await sheetsRequest('POST', ':batchUpdate', {
+        requests: [{ deleteSheet: { sheetId: sheet1.properties.sheetId } }]
+      });
+    }
+  }
+}
+
+async function readSheet(sheetName) {
+  const data = await sheetsRequest('GET', `/values/${encodeURIComponent(sheetName)}`);
+  const rows = data.values || [];
+  if (rows.length < 2) return [];
+  const headers = rows[0];
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i] || '');
+    return obj;
+  });
+}
+
+async function appendRow(sheetName, rowData) {
+  await sheetsRequest('POST', `/values/${encodeURIComponent(sheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, {
+    values: [rowData]
+  });
+}
+
+async function updateRow(sheetName, rowIndex, rowData) {
+  // rowIndex is 0-based data index, so sheet row = rowIndex + 2 (1 for header, 1 for 1-based)
+  const sheetRow = rowIndex + 2;
+  const colCount = rowData.length;
+  const endCol = String.fromCharCode(64 + colCount);
+  await sheetsRequest('PUT', `/values/${encodeURIComponent(sheetName)}!A${sheetRow}:${endCol}${sheetRow}`, {
+    range: `${sheetName}!A${sheetRow}:${endCol}${sheetRow}`,
+    valueInputOption: 'RAW',
+    values: [rowData]
+  });
+}
+
+async function deleteRow(sheetName, rowIndex) {
+  // Get sheet ID
+  const info = await sheetsRequest('GET', '');
+  const sheet = info.sheets.find(s => s.properties.title === sheetName);
+  if (!sheet) return;
+  const sheetId = sheet.properties.sheetId;
+  const startIndex = rowIndex + 1; // +1 for header
+
+  await sheetsRequest('POST', ':batchUpdate', {
+    requests: [{
+      deleteDimension: {
+        range: {
+          sheetId,
+          dimension: 'ROWS',
+          startIndex,
+          endIndex: startIndex + 1
+        }
+      }
+    }]
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// LOAD ALL DATA
+// ═══════════════════════════════════════════════════════
+async function loadAllData() {
+  try {
+    const [clients, invoices, expenses, payments, receivables] = await Promise.all([
+      readSheet(SHEETS.clients),
+      readSheet(SHEETS.invoices),
+      readSheet(SHEETS.expenses),
+      readSheet(SHEETS.payments),
+      readSheet(SHEETS.receivables)
+    ]);
+    DATA.clients = clients;
+    DATA.invoices = invoices;
+    DATA.expenses = expenses;
+    DATA.payments = payments;
+    DATA.receivables = receivables;
+  } catch (e) {
+    console.error('Load error', e);
+    showToast('Error loading data. Check console.');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+const PAGE_TITLES = {
+  dashboard: 'Dashboard',
+  clients: 'Clients',
+  invoices: 'Invoices',
+  expenses: 'Expenses',
+  payments: 'Payments',
+  receivables: 'Future Receivables',
+  pl: 'P&L',
+  reports: 'Auditor Reports'
+};
+
+const PAGE_ACTIONS = {
+  clients: `<button class="btn btn-primary" onclick="openClientModal()">+ Add Client</button>`,
+  invoices: `<button class="btn btn-primary" onclick="openInvoiceModal()">+ Add Invoice</button>`,
+  expenses: `<button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button>`,
+  payments: `<button class="btn btn-primary" onclick="openPaymentModal()">+ Add Payment</button>
+             <button class="btn" onclick="showBankUploadInfo()">↑ Upload Statement</button>`,
+  receivables: `<button class="btn btn-primary" onclick="openReceivableModal()">+ Add Receivable</button>`
+};
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') === `navigate('${page}')`) n.classList.add('active');
+  });
+
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[page] || page;
+  document.getElementById('topbarActions').innerHTML = PAGE_ACTIONS[page] || '';
+
+  currentPage = page;
+  renderPage();
+}
+
+function renderPage() {
+  switch (currentPage) {
+    case 'dashboard': renderDashboard(); break;
+    case 'clients': renderClients(); break;
+    case 'invoices': renderInvoices(); populateInvClientFilter(); break;
+    case 'expenses': renderExpenses(); break;
+    case 'payments': renderPayments(); break;
+    case 'receivables': renderReceivables(); break;
+    case 'pl': initPLFilters(); break;
+    case 'reports': initReportFilters(); break;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+function renderDashboard() {
+  const now = new Date();
+  const fyStart = now.getMonth() >= 3 ? new Date(now.getFullYear(), 3, 1) : new Date(now.getFullYear()-1, 3, 1);
+
+  const fyInvoices = DATA.invoices.filter(i => new Date(i.Date) >= fyStart);
+  const totalInvoiced = fyInvoices.reduce((s, i) => s + parseFloat(i.InvoiceTotal || 0), 0);
+  const pendingInvoices = DATA.invoices.filter(i => i.Status === 'Unpaid' || i.Status === 'Partial');
+  const pendingAmt = pendingInvoices.reduce((s, i) => s + parseFloat(i.NetReceivable || 0), 0);
+
+  const fyExpenses = DATA.expenses.filter(e => new Date(e.Date) >= fyStart);
+  const totalExp = fyExpenses.reduce((s, e) => s + parseFloat(e.TotalPayable || 0), 0);
+
+  const futureAmt = DATA.receivables.reduce((s, r) => s + parseFloat(r.Amount || 0), 0);
+
+  document.getElementById('m-invoiced').textContent = fmtINR(totalInvoiced);
+  document.getElementById('m-inv-pending').textContent = fmtINR(pendingAmt);
+  document.getElementById('m-expenses').textContent = fmtINR(totalExp);
+  document.getElementById('m-future').textContent = fmtINR(futureAmt);
+
+  // Recent invoices
+  const recent = [...DATA.invoices].sort((a,b) => new Date(b.Date) - new Date(a.Date)).slice(0, 5);
+  const invEl = document.getElementById('dash-recent-invoices');
+  if (!recent.length) {
+    invEl.innerHTML = '<div class="empty-state"><p>No invoices yet</p></div>';
+  } else {
+    invEl.innerHTML = `<table style="width:100%;font-size:12px;border-collapse:collapse;">
+      ${recent.map(i => `<tr>
+        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);">${i.InvoiceNumber}</td>
+        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);color:var(--text-muted);">${i.ClientName}</td>
+        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);text-align:right;">${i.Currency} ${fmtNum(i.InvoiceTotal)}</td>
+        <td style="padding:6px 4px;border-bottom:0.5px solid var(--border);text-align:right;">${statusBadge(i.Status)}</td>
+      </tr>`).join('')}
+    </table>`;
+  }
+
+  // Receivables
+  const recEl = document.getElementById('dash-receivables');
+  if (!DATA.receivables.length) {
+    recEl.innerHTML = '<div class="empty-state"><p>No future receivables</p></div>';
+  } else {
+    recEl.innerHTML = `<table style="width:100%;font-size:12px;border-collapse:collapse;">
+      ${DATA.receivables.slice(0,5).map(r => `<tr>
+        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);">${r.ClientName}</td>
+        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);color:var(--text-muted);">${r.ExpectedDate || '—'}</td>
+        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);text-align:right;">${r.Currency} ${fmtNum(r.Amount)}</td>
+      </tr>`).join('')}
+    </table>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CLIENTS
+// ═══════════════════════════════════════════════════════
+function renderClients() {
+  const search = (document.getElementById('clientSearch')?.value || '').toLowerCase();
+  const filter = document.getElementById('clientFilter')?.value || '';
+
+  let rows = DATA.clients.filter(c => {
+    const matchSearch = !search || c.Name.toLowerCase().includes(search) || (c.GSTNumber||'').toLowerCase().includes(search);
+    const matchFilter = !filter || c.Type === filter;
+    return matchSearch && matchFilter;
+  });
+
+  const tbody = document.getElementById('clientsTable');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">👥</div><p>No clients yet. Add your first client.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((c, idx) => `
+    <tr>
+      <td><strong style="font-weight:500;">${c.Name}</strong></td>
+      <td style="color:var(--text-muted);font-size:12px;">${c.GSTNumber || '—'}</td>
+      <td>${c.Type === 'international' ? c.Country : c.State}</td>
+      <td>${c.GSTApplicable === 'Yes' ? (c.State === 'Karnataka' ? '<span class="badge badge-blue">CGST+SGST</span>' : '<span class="badge badge-neutral">IGST</span>') : '<span class="badge badge-neutral">Nil</span>'}</td>
+      <td>${c.TDSRate || 0}%</td>
+      <td><span class="badge ${c.Type === 'international' ? 'badge-warning' : 'badge-success'}">${c.Type}</span></td>
+      <td>
+        <div style="display:flex;gap:6px;justify-content:flex-end;">
+          <button class="btn btn-sm" onclick="editClient(${DATA.clients.indexOf(c)})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteRecord('clients','${c.ID}',${DATA.clients.indexOf(c)})">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openClientModal(idx) {
+  editingId = idx !== undefined ? DATA.clients[idx].ID : null;
+  document.getElementById('clientModalTitle').textContent = editingId ? 'Edit Client' : 'Add Client';
+  const c = editingId ? DATA.clients[idx] : {};
+  setVal('c-name', c.Name || '');
+  setVal('c-type', c.Type || 'domestic');
+  setVal('c-gst', c.GSTNumber || '');
+  setVal('c-state', c.State || 'Karnataka');
+  setVal('c-country', c.Country || '');
+  setVal('c-city', c.City || '');
+  setVal('c-contact', c.ContactPerson || '');
+  setVal('c-email', c.Email || '');
+  setVal('c-phone', c.Phone || '');
+  setVal('c-gst-applies', c.GSTApplicable || 'Yes');
+  setVal('c-tds-rate', c.TDSRate || '0');
+  setVal('c-notes', c.Notes || '');
+  toggleClientFields();
+  openModal('clientModal');
+}
+
+function editClient(idx) { openClientModal(idx); }
+
+function toggleClientFields() {
+  const type = document.getElementById('c-type').value;
+  const intl = type === 'international';
+  document.getElementById('c-gst-group').style.display = intl ? 'none' : '';
+  document.getElementById('c-state-group').style.display = intl ? 'none' : '';
+  document.getElementById('c-country-group').style.display = intl ? '' : 'none';
+  document.getElementById('c-gst-applies-group').style.display = intl ? 'none' : '';
+}
+
+async function saveClient() {
+  const name = getVal('c-name').trim();
+  if (!name) { showToast('Client name is required'); return; }
+
+  const type = getVal('c-type');
+  const row = [
+    editingId || genId(),
+    name,
+    type,
+    getVal('c-gst'),
+    type === 'domestic' ? getVal('c-state') : '',
+    type === 'international' ? getVal('c-country') : 'India',
+    getVal('c-city'),
+    getVal('c-contact'),
+    getVal('c-email'),
+    getVal('c-phone'),
+    type === 'international' ? 'No' : getVal('c-gst-applies'),
+    getVal('c-tds-rate'),
+    getVal('c-notes')
+  ];
+
+  setBtnLoading('saveClientBtn', true);
+  try {
+    if (editingId) {
+      const idx = DATA.clients.findIndex(c => c.ID === editingId);
+      await updateRow(SHEETS.clients, idx, row);
+    } else {
+      await appendRow(SHEETS.clients, row);
+    }
+    await loadAllData();
+    renderClients();
+    closeModal('clientModal');
+    showToast(editingId ? 'Client updated' : 'Client added');
+  } catch(e) {
+    showToast('Error saving: ' + e.message);
+  }
+  setBtnLoading('saveClientBtn', false);
+}
+
+// ═══════════════════════════════════════════════════════
+// INVOICES
+// ═══════════════════════════════════════════════════════
+function calcGSTType(client) {
+  if (!client || client.Type === 'international' || client.GSTApplicable === 'No') return 'none';
+  if (client.State === 'Karnataka') return 'cgst_sgst';
+  return 'igst';
+}
+
+function calcInvoice() {
+  const client = DATA.clients.find(c => c.ID === getVal('i-client'));
+  const base = parseFloat(getVal('i-base')) || 0;
+  if (!base) { document.getElementById('invoiceBreakdown').style.display = 'none'; return; }
+
+  document.getElementById('invoiceBreakdown').style.display = '';
+  const gstType = calcGSTType(client);
+  const tdsRate = client ? parseFloat(client.TDSRate || 0) / 100 : 0;
+  const currency = getVal('i-currency');
+
+  let cgst = 0, sgst = 0, igst = 0;
+  if (gstType === 'cgst_sgst') { cgst = base * 0.09; sgst = base * 0.09; }
+  else if (gstType === 'igst') { igst = base * 0.18; }
+
+  const totalTax = cgst + sgst + igst;
+  const invoiceTotal = base + totalTax;
+  const tdsAmt = base * tdsRate;
+  const netReceivable = invoiceTotal - tdsAmt;
+
+  const sym = currSym(currency);
+  document.getElementById('bd-base').textContent = sym + fmtNum(base);
+  document.getElementById('bd-cgst-row').style.display = gstType === 'cgst_sgst' ? '' : 'none';
+  document.getElementById('bd-sgst-row').style.display = gstType === 'cgst_sgst' ? '' : 'none';
+  document.getElementById('bd-igst-row').style.display = gstType === 'igst' ? '' : 'none';
+  document.getElementById('bd-cgst').textContent = sym + fmtNum(cgst);
+  document.getElementById('bd-sgst').textContent = sym + fmtNum(sgst);
+  document.getElementById('bd-igst').textContent = sym + fmtNum(igst);
+  document.getElementById('bd-total').textContent = sym + fmtNum(invoiceTotal);
+  document.getElementById('bd-tds').textContent = '− ' + sym + fmtNum(tdsAmt);
+  document.getElementById('bd-net').textContent = sym + fmtNum(netReceivable);
+
+  const gstLabel = gstType === 'none' ? (client?.Type === 'international' ? '🌐 International — zero-rated export, no GST' : '⊘ GST not applicable') :
+    gstType === 'cgst_sgst' ? '🏠 Karnataka client — CGST 9% + SGST 9%' : '🇮🇳 Inter-state — IGST 18%';
+  document.getElementById('bd-gst-type').textContent = gstLabel;
+}
+
+function onInvoiceClientChange() { calcInvoice(); }
+
+function populateInvClientFilter() {
+  const sel = document.getElementById('invClientFilter');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All clients</option>' +
+    DATA.clients.map(c => `<option value="${c.ID}" ${c.ID === cur ? 'selected' : ''}>${c.Name}</option>`).join('');
+}
+
+function renderInvoices() {
+  const search = (document.getElementById('invSearch')?.value || '').toLowerCase();
+  const status = document.getElementById('invStatusFilter')?.value || '';
+  const clientId = document.getElementById('invClientFilter')?.value || '';
+
+  let rows = DATA.invoices.filter(i => {
+    const ms = !search || i.InvoiceNumber.toLowerCase().includes(search) || i.ClientName.toLowerCase().includes(search);
+    const mst = !status || i.Status === status;
+    const mc = !clientId || i.ClientID === clientId;
+    return ms && mst && mc;
+  }).sort((a,b) => new Date(b.Date) - new Date(a.Date));
+
+  const tbody = document.getElementById('invoicesTable');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📄</div><p>No invoices yet.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(i => `
+    <tr>
+      <td><span style="font-weight:500;font-size:12px;">${i.InvoiceNumber}</span>${i.IsExport === 'Yes' ? ' <span class="badge badge-warning" style="font-size:10px;">Export</span>' : ''}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${fmtDate(i.Date)}</td>
+      <td>${i.ClientName}</td>
+      <td><span class="badge badge-neutral">${i.Currency}</span></td>
+      <td class="text-right">${fmtNum(i.BaseAmount)}</td>
+      <td class="text-right" style="color:var(--text-muted);">${fmtNum(i.TotalTax)}</td>
+      <td class="text-right text-danger">${fmtNum(i.TDSAmount)}</td>
+      <td class="text-right text-success"><strong>${fmtNum(i.NetReceivable)}</strong></td>
+      <td>${statusBadge(i.Status)}</td>
+      <td>
+        <div style="display:flex;gap:4px;justify-content:flex-end;">
+          <button class="btn btn-sm" onclick="editInvoice(${DATA.invoices.indexOf(i)})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteRecord('invoices','${i.ID}',${DATA.invoices.indexOf(i)})">×</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openInvoiceModal(idx) {
+  editingId = idx !== undefined ? DATA.invoices[idx].ID : null;
+  document.getElementById('invoiceModalTitle').textContent = editingId ? 'Edit Invoice' : 'Add Invoice';
+
+  // Populate clients
+  const sel = document.getElementById('i-client');
+  sel.innerHTML = '<option value="">Select client...</option>' +
+    DATA.clients.map(c => `<option value="${c.ID}">${c.Name}</option>`).join('');
+
+  const inv = editingId ? DATA.invoices[idx] : {};
+  setVal('i-num', inv.InvoiceNumber || '');
+  setVal('i-date', inv.Date || today());
+  setVal('i-client', inv.ClientID || '');
+  setVal('i-desc', inv.Description || '');
+  setVal('i-currency', inv.Currency || 'INR');
+  setVal('i-base', inv.BaseAmount || '');
+
+  document.getElementById('invoiceBreakdown').style.display = 'none';
+  if (inv.BaseAmount) calcInvoice();
+  openModal('invoiceModal');
+}
+
+function editInvoice(idx) { openInvoiceModal(idx); }
+
+async function saveInvoice() {
+  const num = getVal('i-num').trim();
+  const clientId = getVal('i-client');
+  const base = parseFloat(getVal('i-base')) || 0;
+  if (!num || !clientId || !base) { showToast('Invoice number, client and base amount are required'); return; }
+
+  const client = DATA.clients.find(c => c.ID === clientId);
+  const gstType = calcGSTType(client);
+  const tdsRate = parseFloat(client?.TDSRate || 0);
+  const currency = getVal('i-currency');
+
+  let cgst = 0, sgst = 0, igst = 0;
+  if (gstType === 'cgst_sgst') { cgst = base * 0.09; sgst = base * 0.09; }
+  else if (gstType === 'igst') { igst = base * 0.18; }
+
+  const totalTax = cgst + sgst + igst;
+  const invoiceTotal = base + totalTax;
+  const tdsAmt = base * (tdsRate / 100);
+  const netReceivable = invoiceTotal - tdsAmt;
+
+  const row = [
+    editingId || genId(),
+    num,
+    getVal('i-date'),
+    clientId,
+    client?.Name || '',
+    getVal('i-desc'),
+    currency,
+    base,
+    gstType,
+    gstType === 'cgst_sgst' ? 9 : 0,
+    gstType === 'cgst_sgst' ? 9 : 0,
+    gstType === 'igst' ? 18 : 0,
+    round2(cgst), round2(sgst), round2(igst),
+    round2(totalTax), round2(invoiceTotal),
+    tdsRate, round2(tdsAmt), round2(netReceivable),
+    editingId ? (DATA.invoices.find(i => i.ID === editingId)?.Status || 'Unpaid') : 'Unpaid',
+    client?.Type === 'international' ? 'Yes' : 'No',
+    ''
+  ];
+
+  setBtnLoading('saveInvoiceBtn', true);
+  try {
+    if (editingId) {
+      const idx = DATA.invoices.findIndex(i => i.ID === editingId);
+      await updateRow(SHEETS.invoices, idx, row);
+    } else {
+      await appendRow(SHEETS.invoices, row);
+    }
+    await loadAllData();
+    renderInvoices();
+    closeModal('invoiceModal');
+    showToast(editingId ? 'Invoice updated' : 'Invoice saved');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  setBtnLoading('saveInvoiceBtn', false);
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPENSES
+// ═══════════════════════════════════════════════════════
+function calcExpense() {
+  const base = parseFloat(getVal('e-amount')) || 0;
+  if (!base) { document.getElementById('expenseBreakdown').style.display = 'none'; return; }
+
+  const gstRate = parseFloat(getVal('e-gst-rate')) / 100;
+  const tdsRate = parseFloat(getVal('e-tds-rate')) / 100;
+  const gstAmt = base * gstRate;
+  const total = base + gstAmt;
+  const tdsAmt = base * tdsRate;
+  const netPayable = total - tdsAmt;
+
+  document.getElementById('expenseBreakdown').style.display = '';
+  document.getElementById('ebd-base').textContent = '₹' + fmtNum(base);
+  document.getElementById('ebd-gst').textContent = gstAmt ? '+₹' + fmtNum(gstAmt) : 'Nil';
+  document.getElementById('ebd-total').textContent = '₹' + fmtNum(total);
+  document.getElementById('ebd-tds').textContent = tdsAmt ? '−₹' + fmtNum(tdsAmt) : 'Nil';
+  document.getElementById('ebd-net').textContent = '₹' + fmtNum(netPayable);
+}
+
+function renderExpenses() {
+  const search = (document.getElementById('expSearch')?.value || '').toLowerCase();
+  const status = document.getElementById('expStatusFilter')?.value || '';
+
+  let rows = DATA.expenses.filter(e => {
+    const ms = !search || (e.Category||'').toLowerCase().includes(search) || (e.Vendor||'').toLowerCase().includes(search) || (e.Description||'').toLowerCase().includes(search);
+    const mst = !status || e.Status === status;
+    return ms && mst;
+  }).sort((a,b) => new Date(b.Date) - new Date(a.Date));
+
+  const tbody = document.getElementById('expensesTable');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">💸</div><p>No expenses yet.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(e => `
+    <tr>
+      <td style="color:var(--text-muted);font-size:12px;">${fmtDate(e.Date)}</td>
+      <td><span style="font-weight:500;">${e.Category}</span></td>
+      <td style="color:var(--text-muted);">${e.Vendor || '—'}</td>
+      <td><span class="badge badge-neutral">${e.Currency}</span></td>
+      <td class="text-right">${fmtNum(e.BaseAmount)}</td>
+      <td class="text-right text-success">${fmtNum(e.GSTAmount) || '—'}</td>
+      <td class="text-right text-danger">${fmtNum(e.TDSAmount) || '—'}</td>
+      <td class="text-right"><strong>${fmtNum(e.NetPayable)}</strong></td>
+      <td>${statusBadge(e.Status)}</td>
+      <td>
+        <div style="display:flex;gap:4px;justify-content:flex-end;">
+          <button class="btn btn-sm" onclick="editExpense(${DATA.expenses.indexOf(e)})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteRecord('expenses','${e.ID}',${DATA.expenses.indexOf(e)})">×</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openExpenseModal(idx) {
+  editingId = idx !== undefined ? DATA.expenses[idx].ID : null;
+  document.getElementById('expenseModalTitle').textContent = editingId ? 'Edit Expense' : 'Add Expense';
+  const e = editingId ? DATA.expenses.find(x => x.ID === editingId) : {};
+  setVal('e-date', e.Date || today());
+  setVal('e-cat', e.Category || '');
+  setVal('e-vendor', e.Vendor || '');
+  setVal('e-pan', e.PAN || '');
+  setVal('e-desc', e.Description || '');
+  setVal('e-currency', e.Currency || 'INR');
+  setVal('e-amount', e.BaseAmount || '');
+  setVal('e-gst-rate', e.GSTRate || '0');
+  setVal('e-tds-rate', e.TDSRate || '0');
+  document.getElementById('expenseBreakdown').style.display = 'none';
+  if (e.BaseAmount) calcExpense();
+  openModal('expenseModal');
+}
+
+function editExpense(idx) { openExpenseModal(idx); }
+
+async function saveExpense() {
+  const date = getVal('e-date');
+  const cat = getVal('e-cat').trim();
+  const base = parseFloat(getVal('e-amount')) || 0;
+  if (!date || !cat || !base) { showToast('Date, category and amount are required'); return; }
+
+  const gstRate = parseFloat(getVal('e-gst-rate'));
+  const tdsRate = parseFloat(getVal('e-tds-rate'));
+  const gstAmt = base * gstRate / 100;
+  const total = base + gstAmt;
+  const tdsAmt = base * tdsRate / 100;
+  const netPayable = total - tdsAmt;
+
+  const row = [
+    editingId || genId(),
+    date, cat,
+    getVal('e-vendor'), getVal('e-pan'), getVal('e-desc'),
+    getVal('e-currency'), base, gstRate, round2(gstAmt),
+    tdsRate, round2(tdsAmt), round2(total), round2(netPayable),
+    editingId ? (DATA.expenses.find(x => x.ID === editingId)?.Status || 'Unpaid') : 'Unpaid',
+    ''
+  ];
+
+  setBtnLoading('saveExpenseBtn', true);
+  try {
+    if (editingId) {
+      const idx = DATA.expenses.findIndex(x => x.ID === editingId);
+      await updateRow(SHEETS.expenses, idx, row);
+    } else {
+      await appendRow(SHEETS.expenses, row);
+    }
+    await loadAllData();
+    renderExpenses();
+    closeModal('expenseModal');
+    showToast(editingId ? 'Expense updated' : 'Expense saved');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  setBtnLoading('saveExpenseBtn', false);
+}
+
+// ═══════════════════════════════════════════════════════
+// PAYMENTS
+// ═══════════════════════════════════════════════════════
+let currentPayTab = 'all';
+
+function switchPayTab(tab, el) {
+  currentPayTab = tab;
+  document.querySelectorAll('#page-payments .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderPayments();
+}
+
+function renderPayments() {
+  let rows = [...DATA.payments].sort((a,b) => new Date(b.Date) - new Date(a.Date));
+
+  if (currentPayTab === 'untagged') rows = rows.filter(p => !p.Tags || p.Tags === '');
+  else if (currentPayTab === 'inward') rows = rows.filter(p => p.Type === 'Inward');
+  else if (currentPayTab === 'outward') rows = rows.filter(p => p.Type === 'Outward');
+
+  const tbody = document.getElementById('paymentsTable');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🏦</div><p>No payments yet.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(p => {
+    const tagged = p.Tags && p.Tags !== '';
+    const tags = tagged ? JSON.parse(p.Tags || '[]') : [];
+    const tagDisplay = tags.length ? tags.map(t => `<span class="badge badge-blue" style="margin-right:3px;">${t.type}: ${t.ref}</span>`).join('') : '<span class="badge badge-warning">Needs tagging</span>';
+
+    return `<tr>
+      <td style="font-size:12px;color:var(--text-muted);">${fmtDate(p.Date)}</td>
+      <td>${p.Description}</td>
+      <td><span class="badge ${p.Type === 'Inward' ? 'badge-success' : p.Type === 'Loan' ? 'badge-neutral' : 'badge-danger'}">${p.Type}</span></td>
+      <td class="text-right"><strong>₹${fmtNum(p.AmountINR)}</strong></td>
+      <td>${tagDisplay}</td>
+      <td>${p.Type !== 'Loan' && !tagged ? `<button class="btn btn-sm" onclick="openTagModal(${DATA.payments.indexOf(p)})">Tag</button>` : ''}</td>
+      <td>
+        <button class="btn btn-sm btn-danger" onclick="deleteRecord('payments','${p.ID}',${DATA.payments.indexOf(p)})">×</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openPaymentModal() {
+  setVal('p-date', today());
+  setVal('p-type', 'Inward');
+  setVal('p-desc', '');
+  setVal('p-amount', '');
+  setVal('p-ref', '');
+  setVal('p-person', '');
+  payTagRows = [];
+  onPaymentTypeChange();
+  renderTagRows();
+  openModal('paymentModal');
+}
+
+function onPaymentTypeChange() {
+  const type = getVal('p-type');
+  document.getElementById('p-person-group').style.display = type === 'Loan' ? '' : 'none';
+  document.getElementById('p-tagging-section').style.display = type === 'Loan' ? 'none' : '';
+}
+
+function addTagRow() {
+  payTagRows.push({ type: 'Invoice', ref: '', amount: '' });
+  renderTagRows();
+}
+
+function renderTagRows() {
+  const payType = getVal('p-type');
+  const container = document.getElementById('p-tag-items');
+  if (!payTagRows.length) { container.innerHTML = ''; return; }
+
+  const invoiceOptions = DATA.invoices
+    .filter(i => i.Status !== 'Paid')
+    .map(i => `<option value="${i.InvoiceNumber}">${i.InvoiceNumber} — ${i.ClientName} — Net: ${i.Currency} ${fmtNum(i.NetReceivable)}</option>`)
+    .join('');
+
+  const expenseOptions = DATA.expenses
+    .filter(e => e.Status !== 'Paid')
+    .map(e => `<option value="${e.ID}">${e.Category} — ${fmtDate(e.Date)} — ₹${fmtNum(e.NetPayable)}</option>`)
+    .join('');
+
+  container.innerHTML = payTagRows.map((row, i) => `
+    <div style="display:flex;gap:8px;align-items:center;background:var(--bg-secondary);padding:8px;border-radius:var(--radius);">
+      <select style="width:100px;" onchange="payTagRows[${i}].type=this.value;renderTagRows()">
+        <option value="Invoice" ${row.type==='Invoice'?'selected':''}>Invoice</option>
+        ${payType === 'Outward' ? `<option value="Expense" ${row.type==='Expense'?'selected':''}>Expense</option>` : ''}
+      </select>
+      <select style="flex:1;" onchange="payTagRows[${i}].ref=this.value;">
+        <option value="">Select...</option>
+        ${row.type === 'Invoice' ? invoiceOptions : expenseOptions}
+      </select>
+      <input type="number" placeholder="Amount ₹" style="width:110px;" value="${row.amount}" oninput="payTagRows[${i}].amount=this.value;">
+      <button class="btn btn-sm btn-danger" onclick="payTagRows.splice(${i},1);renderTagRows();">×</button>
+    </div>
+  `).join('');
+}
+
+async function savePayment() {
+  const date = getVal('p-date');
+  const desc = getVal('p-desc').trim();
+  const amount = parseFloat(getVal('p-amount')) || 0;
+  if (!date || !desc || !amount) { showToast('Date, description and amount are required'); return; }
+
+  const type = getVal('p-type');
+  const tags = type !== 'Loan' ? JSON.stringify(payTagRows.filter(r => r.ref && r.amount)) : '[]';
+
+  const row = [
+    genId(), date, desc, type, amount,
+    getVal('p-ref'), type === 'Loan' ? getVal('p-person') : '',
+    tags, 'Active'
+  ];
+
+  try {
+    await appendRow(SHEETS.payments, row);
+
+    // Update invoice/expense statuses based on tags
+    const tagsParsed = JSON.parse(tags);
+    for (const tag of tagsParsed) {
+      if (tag.type === 'Invoice') {
+        const inv = DATA.invoices.find(i => i.InvoiceNumber === tag.ref);
+        if (inv) await updateInvoicePaymentStatus(inv);
+      }
+    }
+
+    await loadAllData();
+    renderPayments();
+    closeModal('paymentModal');
+    showToast('Payment saved');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function updateInvoicePaymentStatus(inv) {
+  const allPayments = DATA.payments;
+  const invPayments = allPayments.flatMap(p => {
+    try {
+      const tags = JSON.parse(p.Tags || '[]');
+      return tags.filter(t => t.type === 'Invoice' && t.ref === inv.InvoiceNumber).map(t => parseFloat(t.amount) || 0);
+    } catch { return []; }
+  });
+  const totalPaid = invPayments.reduce((s, a) => s + a, 0);
+  const net = parseFloat(inv.NetReceivable || 0);
+  const newStatus = totalPaid >= net ? 'Paid' : totalPaid > 0 ? 'Partial' : 'Unpaid';
+
+  if (newStatus !== inv.Status) {
+    const idx = DATA.invoices.findIndex(i => i.ID === inv.ID);
+    const row = Object.values(inv);
+    row[20] = newStatus; // Status column
+    await updateRow(SHEETS.invoices, idx, row);
+  }
+}
+
+function showBankUploadInfo() {
+  showToast('Open your Google Sheet → Payments tab → paste ICICI statement rows directly. Come back here and refresh.');
+}
+
+// ═══════════════════════════════════════════════════════
+// FUTURE RECEIVABLES
+// ═══════════════════════════════════════════════════════
+function renderReceivables() {
+  const tbody = document.getElementById('receivablesTable');
+  const rows = DATA.receivables.sort((a,b) => new Date(a.ExpectedDate) - new Date(b.ExpectedDate));
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">🔮</div><p>No future receivables. Add expected revenue that hasn't been invoiced yet.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td><strong style="font-weight:500;">${r.ClientName}</strong></td>
+      <td>${r.Description}</td>
+      <td class="text-right"><strong>${r.Currency} ${fmtNum(r.Amount)}</strong></td>
+      <td style="color:var(--text-muted);">${r.ExpectedDate ? fmtDate(r.ExpectedDate) : '—'}</td>
+      <td><span class="badge badge-neutral">${r.Currency}</span></td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteRecord('receivables','${r.ID}',${DATA.receivables.indexOf(r)})">Delete</button></td>
+    </tr>
+  `).join('');
+}
+
+function openReceivableModal() {
+  setVal('r-client', '');
+  setVal('r-desc', '');
+  setVal('r-currency', 'INR');
+  setVal('r-amount', '');
+  setVal('r-date', '');
+  setVal('r-notes', '');
+  openModal('receivableModal');
+}
+
+async function saveReceivable() {
+  const client = getVal('r-client').trim();
+  const desc = getVal('r-desc').trim();
+  const amount = parseFloat(getVal('r-amount')) || 0;
+  if (!client || !desc || !amount) { showToast('Client, description and amount required'); return; }
+
+  const row = [genId(), client, desc, getVal('r-currency'), amount, getVal('r-date'), getVal('r-notes'), new Date().toISOString().split('T')[0]];
+  try {
+    await appendRow(SHEETS.receivables, row);
+    await loadAllData();
+    renderReceivables();
+    closeModal('receivableModal');
+    showToast('Receivable added');
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// P&L
+// ═══════════════════════════════════════════════════════
+function initPLFilters() {
+  const now = new Date();
+  const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+
+  const fromY = document.getElementById('plFromYear');
+  const toY = document.getElementById('plToYear');
+  fromY.innerHTML = toY.innerHTML = '';
+  for (let y = fyStartYear - 2; y <= fyStartYear + 1; y++) {
+    fromY.innerHTML += `<option value="${y}" ${y === fyStartYear ? 'selected' : ''}>${y}</option>`;
+    toY.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`;
+  }
+  document.getElementById('plFromMonth').value = '4';
+  document.getElementById('plToMonth').value = String(now.getMonth() + 1);
+}
+
+function renderPL() {
+  const fromM = parseInt(document.getElementById('plFromMonth').value);
+  const fromY = parseInt(document.getElementById('plFromYear').value);
+  const toM = parseInt(document.getElementById('plToMonth').value);
+  const toY = parseInt(document.getElementById('plToYear').value);
+  const inclFuture = document.getElementById('includeFuture').checked;
+
+  const fromDate = new Date(fromY, fromM - 1, 1);
+  const toDate = new Date(toY, toM, 0);
+
+  const invoices = DATA.invoices.filter(i => {
+    const d = new Date(i.Date);
+    return d >= fromDate && d <= toDate;
+  });
+
+  const expenses = DATA.expenses.filter(e => {
+    const d = new Date(e.Date);
+    return d >= fromDate && d <= toDate;
+  });
+
+  const revenue = invoices.reduce((s, i) => s + parseFloat(i.BaseAmount || 0), 0);
+  const futureRev = inclFuture ? DATA.receivables.reduce((s, r) => s + parseFloat(r.Amount || 0), 0) : 0;
+  const totalRev = revenue + futureRev;
+
+  const totalExp = expenses.reduce((s, e) => s + parseFloat(e.BaseAmount || 0), 0);
+  const netPL = totalRev - totalExp;
+
+  document.getElementById('plMetrics').innerHTML = `
+    <div class="metric-card">
+      <div class="metric-label">Total Revenue</div>
+      <div class="metric-value text-success">₹${fmtNum(totalRev)}</div>
+      ${inclFuture && futureRev ? `<div class="metric-sub">Incl. ₹${fmtNum(futureRev)} future</div>` : ''}
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Total Expenses</div>
+      <div class="metric-value text-danger">₹${fmtNum(totalExp)}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Net P&L</div>
+      <div class="metric-value ${netPL >= 0 ? 'text-success' : 'text-danger'}">₹${fmtNum(Math.abs(netPL))}</div>
+      <div class="metric-sub">${netPL >= 0 ? 'Profit' : 'Loss'}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Margin</div>
+      <div class="metric-value">${totalRev ? Math.round(netPL / totalRev * 100) : 0}%</div>
+    </div>
+  `;
+
+  // Revenue breakdown
+  const revByClient = {};
+  invoices.forEach(i => {
+    revByClient[i.ClientName] = (revByClient[i.ClientName] || 0) + parseFloat(i.BaseAmount || 0);
+  });
+  document.getElementById('plRevenueItems').innerHTML = Object.entries(revByClient)
+    .sort((a,b) => b[1]-a[1])
+    .map(([name, amt]) => `
+      <div class="breakdown-row">
+        <span class="breakdown-label">${name}</span>
+        <span>₹${fmtNum(amt)}</span>
+      </div>
+    `).join('') + (inclFuture && futureRev ? `<div class="breakdown-row" style="color:var(--warning);">
+      <span>Future receivables</span><span>₹${fmtNum(futureRev)}</span>
+    </div>` : '') + `
+    <div class="breakdown-row total"><span>Total</span><span>₹${fmtNum(totalRev)}</span></div>`;
+
+  // Expense breakdown
+  const expByCat = {};
+  expenses.forEach(e => {
+    expByCat[e.Category] = (expByCat[e.Category] || 0) + parseFloat(e.BaseAmount || 0);
+  });
+  document.getElementById('plExpenseItems').innerHTML = Object.entries(expByCat)
+    .sort((a,b) => b[1]-a[1])
+    .map(([cat, amt]) => `
+      <div class="breakdown-row">
+        <span class="breakdown-label">${cat}</span>
+        <span>₹${fmtNum(amt)}</span>
+      </div>
+    `).join('') + `
+    <div class="breakdown-row total"><span>Total</span><span>₹${fmtNum(totalExp)}</span></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// AUDITOR REPORTS
+// ═══════════════════════════════════════════════════════
+function initReportFilters() {
+  const now = new Date();
+  const yearSel = document.getElementById('reportYear');
+  yearSel.innerHTML = '';
+  for (let y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) {
+    yearSel.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`;
+  }
+  document.getElementById('reportMonth').value = String(now.getMonth() + 1);
+}
+
+async function generateReport() {
+  const month = parseInt(document.getElementById('reportMonth').value);
+  const year = parseInt(document.getElementById('reportYear').value);
+
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 0);
+
+  const monthInvoices = DATA.invoices.filter(i => {
+    const d = new Date(i.Date);
+    return d >= monthStart && d <= monthEnd;
+  });
+
+  const monthExpenses = DATA.expenses.filter(e => {
+    const d = new Date(e.Date);
+    return d >= monthStart && d <= monthEnd;
+  });
+
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const reportName = `AuditorReport_${monthNames[month-1]}_${year}`;
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: GST Collected
+  const gstCollected = [
+    ['Invoice #', 'Date', 'Client', 'State/Country', 'Currency', 'Base Amount', 'GST Type', 'CGST (9%)', 'SGST (9%)', 'IGST (18%)', 'Total Tax', 'Invoice Total', 'Export?'],
+    ...monthInvoices.map(i => [
+      i.InvoiceNumber, i.Date, i.ClientName,
+      i.IsExport === 'Yes' ? 'International' : (DATA.clients.find(c => c.ID === i.ClientID)?.State || ''),
+      i.Currency, parseFloat(i.BaseAmount||0),
+      i.GSTType === 'cgst_sgst' ? 'CGST+SGST' : i.GSTType === 'igst' ? 'IGST' : 'Nil',
+      parseFloat(i.CGSTAmount||0), parseFloat(i.SGSTAmount||0), parseFloat(i.IGSTAmount||0),
+      parseFloat(i.TotalTax||0), parseFloat(i.InvoiceTotal||0),
+      i.IsExport === 'Yes' ? 'Yes' : 'No'
+    ])
+  ];
+  // Totals row
+  if (monthInvoices.length) {
+    gstCollected.push(['TOTAL', '', '', '', '',
+      monthInvoices.reduce((s,i)=>s+parseFloat(i.BaseAmount||0),0), '',
+      monthInvoices.reduce((s,i)=>s+parseFloat(i.CGSTAmount||0),0),
+      monthInvoices.reduce((s,i)=>s+parseFloat(i.SGSTAmount||0),0),
+      monthInvoices.reduce((s,i)=>s+parseFloat(i.IGSTAmount||0),0),
+      monthInvoices.reduce((s,i)=>s+parseFloat(i.TotalTax||0),0),
+      monthInvoices.reduce((s,i)=>s+parseFloat(i.InvoiceTotal||0),0), ''
+    ]);
+  }
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(gstCollected), 'GST Collected');
+
+  // Sheet 2: ITC (GST on expenses)
+  const itcData = [
+    ['Date', 'Category', 'Vendor', 'PAN', 'Currency', 'Base Amount', 'GST Rate', 'GST Amount (ITC)', 'Total Invoice Value'],
+    ...monthExpenses.filter(e => parseFloat(e.GSTRate||0) > 0).map(e => [
+      e.Date, e.Category, e.Vendor||'', e.PAN||'', e.Currency,
+      parseFloat(e.BaseAmount||0), parseFloat(e.GSTRate||0)+'%',
+      parseFloat(e.GSTAmount||0), parseFloat(e.TotalPayable||0)
+    ])
+  ];
+  const itcTotal = monthExpenses.filter(e => parseFloat(e.GSTRate||0) > 0).reduce((s,e) => s + parseFloat(e.GSTAmount||0), 0);
+  if (itcData.length > 1) itcData.push(['TOTAL ITC', '', '', '', '', '', '', itcTotal, '']);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(itcData), 'GST Input Tax Credit');
+
+  // Sheet 3: TDS by clients
+  const tdsClient = [
+    ['Invoice #', 'Date', 'Client', 'Currency', 'Base Amount', 'TDS Rate', 'TDS Amount', 'Net Receivable'],
+    ...monthInvoices.filter(i => parseFloat(i.TDSRate||0) > 0).map(i => [
+      i.InvoiceNumber, i.Date, i.ClientName, i.Currency,
+      parseFloat(i.BaseAmount||0), parseFloat(i.TDSRate||0)+'%',
+      parseFloat(i.TDSAmount||0), parseFloat(i.NetReceivable||0)
+    ])
+  ];
+  const tdsClientTotal = monthInvoices.filter(i => parseFloat(i.TDSRate||0) > 0).reduce((s,i)=>s+parseFloat(i.TDSAmount||0),0);
+  if (tdsClient.length > 1) tdsClient.push(['TOTAL TDS (Client deducts)', '', '', '', '', '', tdsClientTotal, '']);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tdsClient), 'TDS by Clients');
+
+  // Sheet 4: TDS by you
+  const tdsYou = [
+    ['Date', 'Vendor', 'PAN', 'Category', 'Base Amount', 'TDS Rate', 'TDS Amount (Govt Liability)', 'Net Paid to Vendor'],
+    ...monthExpenses.filter(e => parseFloat(e.TDSRate||0) > 0).map(e => [
+      e.Date, e.Vendor||'', e.PAN||'', e.Category,
+      parseFloat(e.BaseAmount||0), parseFloat(e.TDSRate||0)+'%',
+      parseFloat(e.TDSAmount||0), parseFloat(e.NetPayable||0)
+    ])
+  ];
+  const tdsYouTotal = monthExpenses.filter(e => parseFloat(e.TDSRate||0) > 0).reduce((s,e)=>s+parseFloat(e.TDSAmount||0),0);
+  if (tdsYou.length > 1) tdsYou.push(['TOTAL TDS (Your liability)', '', '', '', '', '', tdsYouTotal, '']);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tdsYou), 'TDS You Deduct');
+
+  // Sheet 5: Invoice Summary
+  const summary = [
+    ['Invoice #', 'Date', 'Client', 'Currency', 'Base', 'CGST', 'SGST', 'IGST', 'Invoice Total', 'TDS', 'Net Receivable', 'Status'],
+    ...monthInvoices.map(i => [
+      i.InvoiceNumber, i.Date, i.ClientName, i.Currency,
+      parseFloat(i.BaseAmount||0), parseFloat(i.CGSTAmount||0), parseFloat(i.SGSTAmount||0),
+      parseFloat(i.IGSTAmount||0), parseFloat(i.InvoiceTotal||0),
+      parseFloat(i.TDSAmount||0), parseFloat(i.NetReceivable||0), i.Status
+    ])
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), 'Invoice Summary');
+
+  XLSX.writeFile(wb, `${reportName}.xlsx`);
+  showToast('Report downloaded!');
+}
+
+// ═══════════════════════════════════════════════════════
+// DELETE
+// ═══════════════════════════════════════════════════════
+async function deleteRecord(type, id, idx) {
+  if (!confirm('Are you sure you want to delete this record? This cannot be undone.')) return;
+  try {
+    await deleteRow(SHEETS[type], idx);
+    await loadAllData();
+    renderPage();
+    showToast('Deleted successfully');
+  } catch(e) {
+    showToast('Error deleting: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+}
+
+function fmtNum(n) {
+  const num = parseFloat(n) || 0;
+  return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+function fmtINR(n) {
+  return '₹' + fmtNum(n);
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function round2(n) {
+  return Math.round(parseFloat(n) * 100) / 100;
+}
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function currSym(c) {
+  return { INR: '₹', USD: '$', SGD: 'S$', EUR: '€', GBP: '£' }[c] || c + ' ';
+}
+
+function statusBadge(s) {
+  const map = { Paid: 'badge-success', Partial: 'badge-warning', Unpaid: 'badge-danger' };
+  return `<span class="badge ${map[s] || 'badge-neutral'}">${s || 'Unpaid'}</span>`;
+}
+
+function getVal(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  editingId = null;
+}
+
+function setBtnLoading(id, loading) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<span class="loading"></span> Saving...' : (id.includes('Client') ? 'Save Client' : id.includes('Invoice') ? 'Save Invoice' : 'Save Expense');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target === el) el.classList.remove('open');
+  });
+});
+
+// Load saved config
+window.addEventListener('load', () => {
+  const savedClientId = localStorage.getItem('fd_client_id');
+  const savedSheetId = localStorage.getItem('fd_sheet_id');
+  if (savedClientId) document.getElementById('clientIdInput').value = savedClientId;
+  if (savedSheetId) document.getElementById('sheetIdInput').value = savedSheetId;
+
+  // Init P&L year filters
+  const now = new Date();
+  const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  ['plFromYear', 'plToYear'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel) {
+      for (let y = fyStartYear - 2; y <= fyStartYear + 1; y++) {
+        sel.innerHTML += `<option value="${y}" ${y === now.getFullYear() ? 'selected' : ''}>${y}</option>`;
+      }
+    }
+  });
+});
+
+// gapi stub to avoid null errors before auth
+const gapi = { client: { getToken: () => ({ access_token: '' }) } };
+</script>
+</body>
+</html>
