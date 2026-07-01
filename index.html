@@ -45,12 +45,13 @@
   .sidebar {
     width: var(--sidebar-w);
     background: #0C447C;
-    min-height: 100vh;
-    display: flex;
+    height: 100vh;
+    display: none;
     flex-direction: column;
     position: fixed;
     top: 0; left: 0;
     z-index: 100;
+    overflow-y: auto;
   }
 
   .sidebar-brand {
@@ -124,7 +125,7 @@
   .main {
     margin-left: var(--sidebar-w);
     flex: 1;
-    display: flex;
+    display: none;
     flex-direction: column;
     min-height: 100vh;
   }
@@ -564,6 +565,145 @@
     color: var(--text-hint);
   }
 
+  .page-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    flex-direction: column;
+    gap: 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .page-loader .spin {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .drilldown-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .drilldown-modal {
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border);
+    width: 100%;
+    max-width: 900px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .drilldown-header {
+    padding: 16px 20px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .drilldown-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .drilldown-left {
+    width: 220px;
+    border-right: 0.5px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .drilldown-right {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .drilldown-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 0.5px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  .drilldown-item:hover { background: var(--bg-secondary); }
+  .drilldown-item.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 500; }
+  .drilldown-item .sub-amount { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .kpi-card {
+    background: var(--bg);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    border: 0.5px solid var(--border);
+    text-align: center;
+  }
+
+  .kpi-number {
+    font-size: 36px;
+    font-weight: 600;
+    letter-spacing: -1px;
+    margin: 8px 0 4px;
+  }
+
+  .kpi-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--text-hint);
+    margin-top: 4px;
+  }
+
+  .ops-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .ops-tab {
+    padding: 8px 20px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+  }
+
+  .ops-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 500;
+  }
+
   .empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
   .empty-state p { font-size: 13px; }
 
@@ -754,9 +894,29 @@
   </div>
 
   <div class="sidebar-section">
+    <div class="sidebar-section-label">Ledger</div>
+    <div class="nav-item" onclick="navigate('transactions')">
+      <span class="icon">🔁</span> Transactions
+    </div>
+    <div class="nav-item" onclick="navigate('loans')">
+      <span class="icon">💰</span> Loans
+    </div>
+    <div class="nav-item" onclick="navigate('employees')">
+      <span class="icon">👤</span> Employees
+    </div>
+  </div>
+
+  <div class="sidebar-section">
     <div class="sidebar-section-label">Planning</div>
     <div class="nav-item" onclick="navigate('receivables')">
       <span class="icon">🔮</span> Future Receivables
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Operations</div>
+    <div class="nav-item" onclick="navigate('operations')">
+      <span class="icon">⚡</span> Operations
     </div>
   </div>
 
@@ -767,6 +927,13 @@
     </div>
     <div class="nav-item" onclick="navigate('reports')">
       <span class="icon">📋</span> Auditor Reports
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Settings</div>
+    <div class="nav-item" onclick="navigate('currency')">
+      <span class="icon">💱</span> Currency Rates
     </div>
   </div>
 
@@ -967,6 +1134,77 @@
       </div>
     </div>
 
+    <!-- TRANSACTIONS -->
+    <div class="page" id="page-transactions">
+      <div class="filter-bar">
+        <input type="text" placeholder="Search transactions..." id="txnSearch" oninput="renderTransactions()">
+        <select id="txnTypeFilter" onchange="renderTransactions()">
+          <option value="">All types</option>
+          <option value="Invoice">Invoice</option>
+          <option value="Expense">Expense</option>
+          <option value="Loan">Loan</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Payment Description</th>
+                <th>Type</th>
+                <th>Linked To</th>
+                <th>Amount (INR)</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsTable">
+              <tr><td colspan="5"><div class="empty-state"><p>Loading...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOANS -->
+    <div class="page" id="page-loans">
+      <div class="filter-bar">
+        <input type="text" placeholder="Search loans..." id="loanSearch" oninput="renderLoans()">
+        <select id="loanStatusFilter" onchange="renderLoans()">
+          <option value="">All status</option>
+          <option value="Pending">Pending</option>
+          <option value="Partial">Partial</option>
+          <option value="Settled">Settled</option>
+        </select>
+        <select id="loanTypeFilter" onchange="renderLoans()">
+          <option value="">All types</option>
+          <option value="Taken">Taken (inward)</option>
+          <option value="Given">Given (outward)</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Person</th>
+                <th>Type</th>
+                <th>Amount (INR)</th>
+                <th>Paid Back</th>
+                <th>Outstanding</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="loansTable">
+              <tr><td colspan="9"><div class="empty-state"><p>Loading...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- FUTURE RECEIVABLES -->
     <div class="page" id="page-receivables">
       <div class="card">
@@ -1069,11 +1307,100 @@
       </div>
     </div>
 
+    <!-- EMPLOYEES -->
+    <div class="page" id="page-employees">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Monthly Salary</th>
+                <th>Annual Bonus</th>
+                <th>Joining Date</th>
+                <th>Outstanding Loan</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="employeesTable">
+              <tr><td colspan="7"><div class="empty-state"><p>Loading...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPERATIONS DASHBOARD -->
+    <div class="page" id="page-operations">
+      <div class="kpi-grid" id="ops-kpis">
+        <div class="kpi-card">
+          <div class="kpi-label">Payments Pending Tagging</div>
+          <div class="kpi-number" id="kpi-untagged" style="color:var(--warning);">—</div>
+          <div class="kpi-sub">Both inward &amp; outward</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Invoices Unpaid</div>
+          <div class="kpi-number" id="kpi-inv-unpaid" style="color:var(--danger);">—</div>
+          <div class="kpi-sub" id="kpi-inv-amount">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Expenses Unpaid</div>
+          <div class="kpi-number" id="kpi-exp-unpaid" style="color:var(--danger);">—</div>
+          <div class="kpi-sub" id="kpi-exp-amount">—</div>
+        </div>
+      </div>
+
+      <div class="ops-tabs">
+        <div class="ops-tab active" onclick="switchOpsTab('tagging', this)">Pending Tagging</div>
+        <div class="ops-tab" onclick="switchOpsTab('invoices', this)">Unpaid Invoices</div>
+        <div class="ops-tab" onclick="switchOpsTab('expenses', this)">Unpaid Expenses</div>
+      </div>
+
+      <div class="card" id="ops-table-container">
+        <div class="table-wrap">
+          <table id="ops-table">
+            <thead id="ops-thead"></thead>
+            <tbody id="ops-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CURRENCY RATES -->
+    <div class="page" id="page-currency">
+      <div class="card" style="max-width:560px;">
+        <div class="card-header">
+          <div class="card-title">Currency Rates (to INR)</div>
+          <button class="btn btn-sm" onclick="addCurrencyRow()">+ Add Currency</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+          These rates are used to calculate the INR value of new invoices and expenses at the time they are created. Changing a rate here does not affect existing records — their INR value is locked in permanently when they were entered.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Currency</th>
+                <th>Rate to INR</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="currencyRatesTable">
+              <tr><td colspan="3"><div class="empty-state"><p>Loading...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-primary" onclick="saveCurrencyRates()" style="margin-top:16px;width:100%;" id="saveCurrencyBtn">Save Rates</button>
+      </div>
+    </div>
+
   </div>
 </main>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
 
 <!-- CLIENT MODAL -->
 <div class="modal-overlay" id="clientModal">
@@ -1218,6 +1545,7 @@
         <hr class="divider">
         <div class="breakdown-row"><span class="breakdown-label">TDS Deducted by Client</span><span id="bd-tds" class="text-danger">—</span></div>
         <div class="breakdown-row total"><span>Net Receivable</span><span id="bd-net" class="text-success">—</span></div>
+        <div class="breakdown-row" id="bd-inr-row" style="display:none;"><span class="breakdown-label">≈ INR Value (at current rate)</span><span id="bd-inr">—</span></div>
         <div style="margin-top:8px; padding:6px 8px; background:var(--primary-light); border-radius:4px; font-size:11px; color:var(--primary-dark);" id="bd-gst-type">—</div>
       </div>
     </div>
@@ -1243,7 +1571,15 @@
         </div>
         <div class="form-group">
           <label>Category *</label>
-          <input type="text" id="e-cat" placeholder="e.g. Salary, Software, Travel">
+          <select id="e-cat" onchange="onCategoryChange()">
+            <option value="">Select category...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Subcategory *</label>
+          <select id="e-subcat">
+            <option value="">Select category first</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Vendor / Payee</label>
@@ -1259,7 +1595,7 @@
         </div>
         <div class="form-group">
           <label>Currency</label>
-          <select id="e-currency">
+          <select id="e-currency" onchange="calcExpense()">
             <option value="INR">INR ₹</option>
             <option value="USD">USD $</option>
             <option value="SGD">SGD S$</option>
@@ -1296,6 +1632,7 @@
         <hr class="divider">
         <div class="breakdown-row"><span class="breakdown-label">TDS Deducted (your liability)</span><span id="ebd-tds" class="text-danger">—</span></div>
         <div class="breakdown-row total"><span>Net You Pay Vendor</span><span id="ebd-net" class="text-success">—</span></div>
+        <div class="breakdown-row" id="ebd-inr-row" style="display:none;"><span class="breakdown-label">≈ INR Value (at current rate)</span><span id="ebd-inr">—</span></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1357,6 +1694,102 @@
   </div>
 </div>
 
+<!-- EMPLOYEE MODAL -->
+<div class="modal-overlay" id="employeeModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <h3 id="employeeModalTitle">Add Employee</h3>
+      <button class="btn btn-sm" onclick="closeModal('employeeModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Full Name *</label>
+          <input type="text" id="emp-name" placeholder="Employee full name">
+        </div>
+        <div class="form-group">
+          <label>Monthly Salary (INR) *</label>
+          <input type="number" id="emp-salary" placeholder="50000" min="0">
+        </div>
+        <div class="form-group">
+          <label>Annual Bonus (INR)</label>
+          <input type="number" id="emp-bonus" placeholder="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>Joining Date</label>
+          <input type="date" id="emp-joining">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="emp-status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="emp-notes" placeholder="Any additional info..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('employeeModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEmployee()" id="saveEmployeeBtn">Save Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOAN MODAL -->
+<div class="modal-overlay" id="loanModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h3 id="loanModalTitle">Add Loan</h3>
+      <button class="btn btn-sm" onclick="closeModal('loanModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="l-date">
+        </div>
+        <div class="form-group">
+          <label>Type *</label>
+          <select id="l-type">
+            <option value="Taken">Taken (someone lent you)</option>
+            <option value="Given">Given (you lent someone)</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Employee (if loan is to/from an employee)</label>
+          <select id="l-employee" onchange="onLoanEmployeeChange()">
+            <option value="">— Not an employee loan —</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Person Name *</label>
+          <input type="text" id="l-person" placeholder="Name of lender / borrower">
+        </div>
+        <div class="form-group">
+          <label>Amount (INR) *</label>
+          <input type="number" id="l-amount" placeholder="0" min="0">
+        </div>
+        <div class="form-group full">
+          <label>Description</label>
+          <input type="text" id="l-desc" placeholder="Purpose of loan">
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="l-notes" placeholder="Any additional notes..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('loanModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLoan()" id="saveLoanBtn">Save Loan</button>
+    </div>
+  </div>
+</div>
+
 <!-- RECEIVABLE MODAL -->
 <div class="modal-overlay" id="receivableModal">
   <div class="modal" style="max-width:480px;">
@@ -1411,12 +1844,13 @@
 // CONFIG & STATE
 // ═══════════════════════════════════════════════════════
 const DISCOVERY_DOCS = ['https://sheets.googleapis.com/$discovery/rest?version=v4'];
-const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets openid email profile';
 
 let CLIENT_ID = '';
 let SHEET_ID = '';
 let tokenClient;
 let isSignedIn = false;
+let accessToken = null;
 let currentPage = 'dashboard';
 let editingId = null;
 let payTagRows = [];
@@ -1427,7 +1861,13 @@ let DATA = {
   invoices: [],
   expenses: [],
   payments: [],
-  receivables: []
+  transactions: [],
+  receivables: [],
+  config: [],
+  loans: [],
+  categories: [],
+  currencyRates: [],
+  employees: []
 };
 
 // Sheet names
@@ -1436,17 +1876,90 @@ const SHEETS = {
   invoices: 'Invoices',
   expenses: 'Expenses',
   payments: 'Payments',
-  receivables: 'FutureReceivables'
+  transactions: 'Transactions',
+  receivables: 'FutureReceivables',
+  config: 'Config',
+  loans: 'Loans',
+  categories: 'Categories',
+  currencyRates: 'CurrencyRates',
+  employees: 'Employees'
 };
 
 // Sheet headers
 const HEADERS = {
   clients: ['ID','Name','Type','GSTNumber','State','Country','City','ContactPerson','Email','Phone','GSTApplicable','TDSRate','Notes'],
-  invoices: ['ID','InvoiceNumber','Date','ClientID','ClientName','Description','Currency','BaseAmount','GSTType','CGSTRate','SGSTRate','IGSTRate','CGSTAmount','SGSTAmount','IGSTAmount','TotalTax','InvoiceTotal','TDSRate','TDSAmount','NetReceivable','Status','IsExport','Notes'],
-  expenses: ['ID','Date','Category','Vendor','PAN','Description','Currency','BaseAmount','GSTRate','GSTAmount','TDSRate','TDSAmount','TotalPayable','NetPayable','Status','Notes'],
-  payments: ['ID','Date','Description','Type','AmountINR','Reference','PersonName','Tags','Status'],
-  receivables: ['ID','ClientName','Description','Currency','Amount','ExpectedDate','Notes','CreatedAt']
+  invoices: ['ID','InvoiceNumber','Date','ClientID','ClientName','Description','Currency','BaseAmount','GSTType','CGSTRate','SGSTRate','IGSTRate','CGSTAmount','SGSTAmount','IGSTAmount','TotalTax','InvoiceTotal','TDSRate','TDSAmount','NetReceivable','INRValue','RateUsed','Status','IsExport','Notes'],
+  expenses: ['ID','Date','Category','Subcategory','Vendor','PAN','Description','Currency','BaseAmount','GSTRate','GSTAmount','TDSRate','TDSAmount','TotalPayable','NetPayable','INRValue','RateUsed','Status','Notes'],
+  payments: ['ID','Date','Description','Type','AmountINR','Reference','PersonName','Status'],
+  transactions: ['ID','PaymentID','PaymentDate','RefType','RefID','RefLabel','AmountINR'],
+  receivables: ['ID','ClientName','Description','Currency','Amount','ExpectedDate','Notes','CreatedAt'],
+  config: ['Email','AllowedTabs'],
+  loans: ['ID','Date','PersonName','EmployeeID','Type','AmountINR','Description','Status','Notes'],
+  categories: ['Category','Subcategory'],
+  currencyRates: ['Currency','RateToINR'],
+  employees: ['ID','Name','MonthlySalary','AnnualBonus','JoiningDate','Status','Notes']
 };
+
+// Default currency rates — seeded on first run if Currency Rates sheet is empty
+const DEFAULT_CURRENCY_RATES = [
+  ['INR', '1'],
+  ['USD', '83.5'],
+  ['EUR', '90.2'],
+  ['GBP', '105'],
+  ['SGD', '62']
+];
+
+// Default categories — written into the Categories sheet on first run if empty
+const DEFAULT_CATEGORIES = [
+  ['Personnel','Salary'],
+  ['Personnel','Contractor / Freelancer'],
+  ['Personnel','Recruitment'],
+  ['Personnel','Training & Development'],
+  ['Personnel','Staff Meals & Lunch'],
+  ['Personnel','Staff Welfare'],
+  ['Personnel','Employee Insurance'],
+  ['Hardware & Equipment','Laptops & Computers'],
+  ['Hardware & Equipment','Accessories & Peripherals'],
+  ['Hardware & Equipment','Mobile Devices'],
+  ['Hardware & Equipment','Networking Equipment'],
+  ['Hardware & Equipment','Other Hardware'],
+  ['Infrastructure','Cloud (AWS, GCP, Azure)'],
+  ['Infrastructure','Hosting & Servers'],
+  ['Infrastructure','Domain & SSL'],
+  ['Infrastructure','Internet & Connectivity'],
+  ['Software & Subscriptions','Productivity (Office 365, Google Workspace)'],
+  ['Software & Subscriptions','Development Tools (GitHub, Jira, Figma)'],
+  ['Office','Rent'],
+  ['Office','Utilities'],
+  ['Office','Office Supplies'],
+  ['Office','Maintenance & Repairs'],
+  ['Office','Housekeeping'],
+  ['Travel & Conveyance','Client Travel'],
+  ['Travel & Conveyance','Team Travel'],
+  ['Travel & Conveyance','Local Conveyance'],
+  ['Travel & Conveyance','Accommodation'],
+  ['Marketing & Business Development','Digital Marketing'],
+  ['Professional Services','Legal'],
+  ['Professional Services','Accounting & Audit'],
+  ['Professional Services','Consulting'],
+  ['Finance','Bank Charges'],
+  ['Finance','Interest'],
+  ['Finance','Loan Repayment'],
+  ['Taxes & Compliance','GST Payment'],
+  ['Taxes & Compliance','TDS Payment'],
+  ['Taxes & Compliance','Professional Tax'],
+  ['Taxes & Compliance','ROC Filings'],
+  ['Miscellaneous','Petty Cash'],
+  ['Miscellaneous','Other']
+];
+
+// Current user access
+let currentUserEmail = '';
+let currentUserTabs = [];
+
+// ── Owner email ── paste your Gmail here ──────────────────
+const OWNER_EMAIL = 'your@gmail.com';
+// ──────────────────────────────────────────────────────────
 
 // ═══════════════════════════════════════════════════════
 // AUTH
@@ -1481,9 +1994,42 @@ async function startAuth() {
     callback: async (resp) => {
       if (resp.error) { showToast('Auth failed: ' + resp.error); return; }
       isSignedIn = true;
+      accessToken = resp.access_token;
+
+      // Get user email from userinfo endpoint
+      let currentUserEmail_temp = '';
+      try {
+        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { 'Authorization': 'Bearer ' + resp.access_token }
+        }).then(r => r.json());
+        currentUserEmail_temp = (userInfo.email || '').toLowerCase();
+      } catch(e) {
+        console.warn('userinfo failed', e);
+      }
+      // Fallback: prompt user for email if we couldn't get it
+      if (!currentUserEmail_temp) {
+        currentUserEmail_temp = (prompt('Enter your Google email address for access verification:') || '').toLowerCase().trim();
+      }
+      currentUserEmail = currentUserEmail_temp;
+      document.getElementById('userEmail').textContent = currentUserEmail;
+
       document.getElementById('authScreen').style.display = 'none';
       await initSheets();
       await loadAllData();
+
+      // Check access
+      const access = checkUserAccess();
+      if (!access) {
+        showAccessDenied();
+        return;
+      }
+      // Apply tab restrictions before showing anything
+      applyTabAccess();
+      // Now reveal the UI
+      document.querySelector('.sidebar').style.display = 'flex';
+      document.querySelector('.main').style.display = 'flex';
+      // Build initial page skeleton then render
+      rebuildPageSkeleton(currentPage);
       renderPage();
     }
   });
@@ -1492,7 +2038,8 @@ async function startAuth() {
 }
 
 function signOut() {
-  google.accounts.oauth2.revoke(gapi && gapi.client && gapi.client.getToken() && gapi.client.getToken().access_token, () => {});
+  if (accessToken) google.accounts.oauth2.revoke(accessToken, () => {});
+  accessToken = null;
   isSignedIn = false;
   document.getElementById('authScreen').style.display = 'flex';
 }
@@ -1501,8 +2048,6 @@ function signOut() {
 // SHEETS API
 // ═══════════════════════════════════════════════════════
 async function sheetsRequest(method, path, body) {
-  const token = google.accounts.oauth2.initTokenClient && gapi.client.getToken();
-  const accessToken = token ? token.access_token : null;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}${path}`;
   const opts = {
     method,
@@ -1513,7 +2058,18 @@ async function sheetsRequest(method, path, body) {
   };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(url, opts);
-  return res.json();
+  if (res.status === 401) {
+    // Token expired, request new one
+    tokenClient.requestAccessToken();
+    throw new Error('Session expired. Please sign in again.');
+  }
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = (data && data.error && data.error.message) ? data.error.message : ('Request failed with status ' + res.status);
+    console.error('Sheets API error:', method, path, msg, data);
+    throw new Error(msg);
+  }
+  return data;
 }
 
 async function getSheetsList() {
@@ -1522,27 +2078,62 @@ async function getSheetsList() {
 }
 
 async function createSheet(name, headers) {
-  // Add sheet
+  // Step 1: Add the sheet tab
   await sheetsRequest('POST', ':batchUpdate', {
     requests: [{ addSheet: { properties: { title: name } } }]
   });
-  // Add headers
-  await sheetsRequest('PUT', `/values/${encodeURIComponent(name)}!A1`, {
-    range: `${name}!A1`,
-    valueInputOption: 'RAW',
+  // Step 2: Write headers using correct query-param format
+  await writeHeaders(name, headers);
+}
+
+async function writeHeaders(name, headers) {
+  const range = encodeURIComponent(name + '!A1');
+  await sheetsRequest('PUT', `/values/${range}?valueInputOption=RAW`, {
+    range: name + '!A1',
     values: [headers]
   });
 }
 
 async function initSheets() {
   const existing = await getSheetsList();
+  const isFirstRun = existing.length === 0 || (existing.length === 1 && existing[0] === 'Sheet1');
+
   for (const [key, name] of Object.entries(SHEETS)) {
     if (!existing.includes(name)) {
       await createSheet(name, HEADERS[key]);
+      if (key === 'categories') {
+        await seedDefaultCategories();
+      }
+      if (key === 'currencyRates') {
+        await seedDefaultCurrencyRates();
+      }
+    } else {
+      // Sheet exists — check if headers are missing and write them if so
+      const data = await sheetsRequest('GET', `/values/${encodeURIComponent(name)}!A1:Z1`);
+      const firstRow = (data.values || [])[0] || [];
+      if (firstRow.length === 0) {
+        await writeHeaders(name, HEADERS[key]);
+      }
+      if (key === 'categories') {
+        // Check if sheet has only header row (no data) and seed defaults
+        const fullData = await sheetsRequest('GET', `/values/${encodeURIComponent(name)}`);
+        const rows = fullData.values || [];
+        if (rows.length <= 1) {
+          await seedDefaultCategories();
+        }
+      }
+      if (key === 'currencyRates') {
+        const fullData = await sheetsRequest('GET', `/values/${encodeURIComponent(name)}`);
+        const rows = fullData.values || [];
+        if (rows.length <= 1) {
+          await seedDefaultCurrencyRates();
+        }
+      }
     }
   }
-  // Remove default Sheet1 if exists and we just created
-  if (existing.includes('Sheet1') && existing.length === 1) {
+
+  // Remove default Sheet1 if this is a fresh spreadsheet
+  if (isFirstRun && existing.includes('Sheet1')) {
     const info = await sheetsRequest('GET', '');
     const sheet1 = info.sheets.find(s => s.properties.title === 'Sheet1');
     if (sheet1) {
@@ -1550,6 +2141,18 @@ async function initSheets() {
         requests: [{ deleteSheet: { sheetId: sheet1.properties.sheetId } }]
       });
     }
+  }
+}
+
+async function seedDefaultCategories() {
+  for (const row of DEFAULT_CATEGORIES) {
+    await appendRow(SHEETS.categories, row);
+  }
+}
+
+async function seedDefaultCurrencyRates() {
+  for (const row of DEFAULT_CURRENCY_RATES) {
+    await appendRow(SHEETS.currencyRates, row);
   }
 }
 
@@ -1576,9 +2179,9 @@ async function updateRow(sheetName, rowIndex, rowData) {
   const sheetRow = rowIndex + 2;
   const colCount = rowData.length;
   const endCol = String.fromCharCode(64 + colCount);
-  await sheetsRequest('PUT', `/values/${encodeURIComponent(sheetName)}!A${sheetRow}:${endCol}${sheetRow}`, {
-    range: `${sheetName}!A${sheetRow}:${endCol}${sheetRow}`,
-    valueInputOption: 'RAW',
+  const range = `${sheetName}!A${sheetRow}:${endCol}${sheetRow}`;
+  await sheetsRequest('PUT', `/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
+    range: range,
     values: [rowData]
   });
 }
@@ -1610,18 +2213,30 @@ async function deleteRow(sheetName, rowIndex) {
 // ═══════════════════════════════════════════════════════
 async function loadAllData() {
   try {
-    const [clients, invoices, expenses, payments, receivables] = await Promise.all([
+    const [clients, invoices, expenses, payments, transactions, receivables, config, loans, categories, currencyRates, employees] = await Promise.all([
       readSheet(SHEETS.clients),
       readSheet(SHEETS.invoices),
       readSheet(SHEETS.expenses),
       readSheet(SHEETS.payments),
-      readSheet(SHEETS.receivables)
+      readSheet(SHEETS.transactions),
+      readSheet(SHEETS.receivables),
+      readSheet(SHEETS.config),
+      readSheet(SHEETS.loans),
+      readSheet(SHEETS.categories),
+      readSheet(SHEETS.currencyRates),
+      readSheet(SHEETS.employees)
     ]);
     DATA.clients = clients;
     DATA.invoices = invoices;
     DATA.expenses = expenses;
     DATA.payments = payments;
+    DATA.transactions = transactions;
     DATA.receivables = receivables;
+    DATA.config = config;
+    DATA.loans = loans;
+    DATA.categories = categories;
+    DATA.currencyRates = currencyRates;
+    DATA.employees = employees;
   } catch (e) {
     console.error('Load error', e);
     showToast('Error loading data. Check console.');
@@ -1637,34 +2252,250 @@ const PAGE_TITLES = {
   invoices: 'Invoices',
   expenses: 'Expenses',
   payments: 'Payments',
+  transactions: 'All Transactions',
+  loans: 'Loans',
   receivables: 'Future Receivables',
   pl: 'P&L',
-  reports: 'Auditor Reports'
+  reports: 'Auditor Reports',
+  currency: 'Currency Rates',
+  employees: 'Employees',
+  operations: 'Operations Dashboard'
 };
 
-const PAGE_ACTIONS = {
-  clients: `<button class="btn btn-primary" onclick="openClientModal()">+ Add Client</button>`,
-  invoices: `<button class="btn btn-primary" onclick="openInvoiceModal()">+ Add Invoice</button>`,
-  expenses: `<button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button>`,
-  payments: `<button class="btn btn-primary" onclick="openPaymentModal()">+ Add Payment</button>
-             <button class="btn" onclick="showBankUploadInfo()">↑ Upload Statement</button>`,
-  receivables: `<button class="btn btn-primary" onclick="openReceivableModal()">+ Add Receivable</button>`
-};
+function getPageActions(page) {
+  const addBtns = {
+    clients: '<button class="btn btn-primary" onclick="openClientModal()">+ Add Client</button>',
+    invoices: '<button class="btn btn-primary" onclick="openInvoiceModal()">+ Add Invoice</button>',
+    expenses: '<button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button>',
+    payments: '<button class="btn btn-primary" onclick="openPaymentModal()">+ Add Payment</button>',
+    receivables: '<button class="btn btn-primary" onclick="openReceivableModal()">+ Add Receivable</button>',
+    loans: '<button class="btn btn-primary" onclick="openLoanModal()">+ Add Loan</button>',
+    employees: '<button class="btn btn-primary" onclick="openEmployeeModal()">+ Add Employee</button>' +
+             '<button class="btn" data-module="employees" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
+             '<button class="btn" data-module="employees" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>'
+  };
+  const hasBulk = ['clients','invoices','expenses','payments'];
+  let html = addBtns[page] || '';
+  if (hasBulk.includes(page)) {
+    html += '<button class="btn" data-module="' + page + '" onclick="downloadTemplate(this.dataset.module)">↓ Template</button>';
+    html += '<button class="btn" data-module="' + page + '" onclick="triggerBulkUpload(this.dataset.module)">↑ Bulk Upload</button>';
+  }
+  return html;
+}
 
 function navigate(page) {
+  // Access control check
+  if (currentUserTabs.length && currentUserTabs[0] !== 'all' && !currentUserTabs.includes(page)) {
+    showToast('You do not have access to this page.');
+    return;
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
-  document.getElementById('page-' + page).classList.add('active');
+  const pageEl = document.getElementById('page-' + page);
+  pageEl.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => {
-    if (n.getAttribute('onclick') === `navigate('${page}')`) n.classList.add('active');
+    if (n.getAttribute('onclick') === "navigate('" + page + "')") n.classList.add('active');
   });
 
   document.getElementById('pageTitle').textContent = PAGE_TITLES[page] || page;
-  document.getElementById('topbarActions').innerHTML = PAGE_ACTIONS[page] || '';
+  document.getElementById('topbarActions').innerHTML = getPageActions(page);
 
   currentPage = page;
+
+  // Show spinner then render on next tick (allows browser to paint first)
+  pageEl.innerHTML = '<div class="page-loader"><div class="spin"></div><span>Loading...</span></div>';
+  setTimeout(() => {
+    pageEl.innerHTML = '';
+    renderPageContent(page);
+  }, 30);
+}
+
+function renderPageContent(page) {
+  // Rebuild page skeleton then render data
+  rebuildPageSkeleton(page);
   renderPage();
+}
+
+// Hidden file input for bulk uploads
+const bulkInput = document.createElement('input');
+bulkInput.type = 'file';
+bulkInput.accept = '.xlsx,.xls,.csv';
+bulkInput.style.display = 'none';
+document.body.appendChild(bulkInput);
+let currentBulkModule = '';
+
+function triggerBulkUpload(module) {
+  currentBulkModule = module;
+  bulkInput.value = '';
+  bulkInput.onchange = () => handleBulkUpload(module, bulkInput.files[0]);
+  bulkInput.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// LAZY PAGE SKELETON BUILDER
+// ═══════════════════════════════════════════════════════
+function rebuildPageSkeleton(page) {
+  const el = document.getElementById('page-' + page);
+  if (!el) return;
+
+  const skeletons = {
+    dashboard: `
+      <div class="metrics-grid" id="dashMetrics">
+        <div class="metric-card"><div class="metric-label">Total Invoiced (FY)</div><div class="metric-value" id="m-invoiced">—</div><div class="metric-sub">Current financial year</div></div>
+        <div class="metric-card"><div class="metric-label">Invoices Pending</div><div class="metric-value" id="m-inv-pending">—</div><div class="metric-sub">Unpaid + partial</div></div>
+        <div class="metric-card"><div class="metric-label">Total Expenses (FY)</div><div class="metric-value" id="m-expenses">—</div><div class="metric-sub">Current financial year</div></div>
+        <div class="metric-card"><div class="metric-label">Future Receivables</div><div class="metric-value" id="m-future">—</div><div class="metric-sub">Expected, not invoiced</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card"><div class="card-header"><div class="card-title">Recent Invoices</div><button class="btn btn-sm" onclick="navigate('invoices')">View all</button></div><div id="dash-recent-invoices"><div class="empty-state"><p>Loading...</p></div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Upcoming Receivables</div><button class="btn btn-sm" onclick="navigate('receivables')">View all</button></div><div id="dash-receivables"><div class="empty-state"><p>Loading...</p></div></div></div>
+      </div>`,
+
+    clients: `
+      <div class="filter-bar">
+        <input type="text" placeholder="Search clients..." id="clientSearch" oninput="renderClients()" style="min-width:200px;">
+        <select id="clientFilter" onchange="renderClients()"><option value="">All types</option><option value="domestic">Domestic</option><option value="international">International</option></select>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Client Name</th><th>GST Number</th><th>State / Country</th><th>GST Type</th><th>TDS Rate</th><th>Type</th><th></th></tr></thead>
+        <tbody id="clientsTable"><tr><td colspan="7"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
+    invoices: `
+      <div class="filter-bar">
+        <input type="text" placeholder="Search invoices..." id="invSearch" oninput="renderInvoices()">
+        <select id="invStatusFilter" onchange="renderInvoices()"><option value="">All status</option><option value="Unpaid">Unpaid</option><option value="Partial">Partially paid</option><option value="Paid">Paid</option></select>
+        <select id="invClientFilter" onchange="renderInvoices()"><option value="">All clients</option></select>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Invoice #</th><th>Date</th><th>Client</th><th>Currency</th><th>Base Amount</th><th>Tax</th><th>TDS</th><th>Net Receivable</th><th>INR Value</th><th>Status</th><th></th></tr></thead>
+        <tbody id="invoicesTable"><tr><td colspan="11"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
+    expenses: `
+      <div class="filter-bar">
+        <input type="text" placeholder="Search expenses..." id="expSearch" oninput="renderExpenses()">
+        <select id="expStatusFilter" onchange="renderExpenses()"><option value="">All status</option><option value="Unpaid">Unpaid</option><option value="Partial">Partially paid</option><option value="Paid">Paid</option></select>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Category</th><th>Vendor / Payee</th><th>Currency</th><th>Amount</th><th>GST (ITC)</th><th>TDS Deducted</th><th>Net Payable</th><th>Status</th><th></th></tr></thead>
+        <tbody id="expensesTable"><tr><td colspan="10"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
+    payments: `
+      <div class="tabs">
+        <div class="tab active" onclick="switchPayTab('all', this)">All Payments</div>
+        <div class="tab" onclick="switchPayTab('untagged', this)">Needs Tagging</div>
+        <div class="tab" onclick="switchPayTab('inward', this)">Inward</div>
+        <div class="tab" onclick="switchPayTab('outward', this)">Outward</div>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Amount (INR)</th><th>Tagged To</th><th>Tag</th><th></th></tr></thead>
+        <tbody id="paymentsTable"><tr><td colspan="7"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
+    transactions: `
+      <div class="filter-bar">
+        <input type="text" placeholder="Search transactions..." id="txnSearch" oninput="renderTransactions()">
+        <select id="txnTypeFilter" onchange="renderTransactions()"><option value="">All types</option><option value="Invoice">Invoice</option><option value="Expense">Expense</option><option value="Loan">Loan</option></select>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Payment Description</th><th>Type</th><th>Linked To</th><th>Amount (INR)</th></tr></thead>
+        <tbody id="transactionsTable"><tr><td colspan="5"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
+    loans: `
+      <div class="filter-bar">
+        <input type="text" placeholder="Search loans..." id="loanSearch" oninput="renderLoans()">
+        <select id="loanStatusFilter" onchange="renderLoans()"><option value="">All status</option><option value="Pending">Pending</option><option value="Partial">Partial</option><option value="Settled">Settled</option></select>
+        <select id="loanTypeFilter" onchange="renderLoans()"><option value="">All types</option><option value="Taken">Taken</option><option value="Given">Given</option></select>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Person</th><th>Type</th><th>Amount (INR)</th><th>Paid Back</th><th>Outstanding</th><th>Description</th><th>Status</th><th></th></tr></thead>
+        <tbody id="loansTable"><tr><td colspan="9"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
+    employees: `
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Monthly Salary</th><th>Annual Bonus</th><th>Joining Date</th><th>Outstanding Loan</th><th>Status</th><th></th></tr></thead>
+        <tbody id="employeesTable"><tr><td colspan="7"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
+    receivables: `
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Client</th><th>Description</th><th>Expected Amount</th><th>Expected Date</th><th>Currency</th><th></th></tr></thead>
+        <tbody id="receivablesTable"><tr><td colspan="6"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
+    pl: `
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <select id="plFromMonth"><option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option></select>
+        <select id="plFromYear" style="width:90px;"></select>
+        <span style="color:var(--text-muted);font-size:12px;">to</span>
+        <select id="plToMonth"><option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option></select>
+        <select id="plToYear" style="width:90px;"></select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);"><input type="checkbox" id="includeFuture"> Include future receivables</label>
+        <button class="btn btn-primary" onclick="renderPL()">Generate</button>
+      </div>
+      <div class="metrics-grid" id="plMetrics"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+        <div class="card" id="plRevenueCard"><div class="card-title" style="margin-bottom:12px;">Revenue</div><div id="plRevenueItems"></div></div>
+        <div class="card" id="plExpenseCard"><div class="card-title" style="margin-bottom:12px;">Expenses</div><div id="plExpenseItems"></div></div>
+      </div>`,
+
+    reports: `
+      <div class="card" style="max-width:480px;">
+        <div class="card-title" style="margin-bottom:16px;">Monthly Auditor Report</div>
+        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="form-group"><label>Month</label><select id="reportMonth"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+          <div class="form-group"><label>Year</label><select id="reportYear" style="width:100%;"></select></div>
+        </div>
+        <div style="margin-top:16px;">
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">The report will contain:</p>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+            <div>📄 Sheet 1 — GST collected on invoices</div>
+            <div>📄 Sheet 2 — GST paid on expenses (ITC)</div>
+            <div>📄 Sheet 3 — TDS deducted by clients</div>
+            <div>📄 Sheet 4 — TDS deducted by you</div>
+            <div>📄 Sheet 5 — Invoice summary</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="generateReport()" style="margin-top:20px;width:100%;" id="reportBtn">Generate &amp; Download Excel Report</button>
+      </div>`,
+
+    currency: `
+      <div class="card" style="max-width:560px;">
+        <div class="card-header"><div class="card-title">Currency Rates (to INR)</div><button class="btn btn-sm" onclick="addCurrencyRow()">+ Add Currency</button></div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">These rates are used to calculate the INR value of new invoices and expenses. Changing a rate does not affect existing records.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Currency</th><th>Rate to INR</th><th></th></tr></thead>
+          <tbody id="currencyRatesTable"><tr><td colspan="3"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+        </table></div>
+        <button class="btn btn-primary" onclick="saveCurrencyRates()" style="margin-top:16px;width:100%;" id="saveCurrencyBtn">Save Rates</button>
+      </div>`,
+
+    operations: `
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Payments Pending Tagging</div><div class="kpi-number" id="kpi-untagged" style="color:var(--warning);">—</div><div class="kpi-sub">Both inward &amp; outward</div></div>
+        <div class="kpi-card"><div class="kpi-label">Invoices Unpaid</div><div class="kpi-number" id="kpi-inv-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-inv-amount">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Expenses Unpaid</div><div class="kpi-number" id="kpi-exp-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-exp-amount">—</div></div>
+      </div>
+      <div class="ops-tabs">
+        <div class="ops-tab active" onclick="switchOpsTab('tagging',this)">Pending Tagging</div>
+        <div class="ops-tab" onclick="switchOpsTab('invoices',this)">Unpaid Invoices</div>
+        <div class="ops-tab" onclick="switchOpsTab('expenses',this)">Unpaid Expenses</div>
+      </div>
+      <div class="card"><div class="table-wrap"><table id="ops-table">
+        <thead id="ops-thead"></thead>
+        <tbody id="ops-tbody"></tbody>
+      </table></div></div>`
+  };
+
+  if (skeletons[page]) {
+    el.innerHTML = skeletons[page];
+  }
 }
 
 function renderPage() {
@@ -1674,10 +2505,395 @@ function renderPage() {
     case 'invoices': renderInvoices(); populateInvClientFilter(); break;
     case 'expenses': renderExpenses(); break;
     case 'payments': renderPayments(); break;
+    case 'transactions': renderTransactions(); break;
+    case 'loans': renderLoans(); break;
     case 'receivables': renderReceivables(); break;
     case 'pl': initPLFilters(); break;
     case 'reports': initReportFilters(); break;
+    case 'currency': renderCurrencyRates(); break;
+    case 'employees': renderEmployees(); break;
+    case 'operations': renderOperations(); break;
   }
+}
+
+// ═══════════════════════════════════════════════════════
+// ACCESS CONTROL
+// ═══════════════════════════════════════════════════════
+function checkUserAccess() {
+  // Owner always gets full access regardless of Config sheet
+  if (currentUserEmail === OWNER_EMAIL.toLowerCase()) {
+    currentUserTabs = ['all'];
+    return true;
+  }
+  // Everyone else must be listed in Config sheet
+  if (!DATA.config.length) return false;
+  const userRow = DATA.config.find(r => (r.Email || '').toLowerCase() === currentUserEmail);
+  if (!userRow) return false;
+  const tabs = (userRow.AllowedTabs || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+  if (!tabs.length) return false;
+  currentUserTabs = tabs;
+  return true;
+}
+
+function applyTabAccess() {
+  if (!currentUserTabs.length || currentUserTabs[0] === 'all') return;
+  // Hide nav items user cannot access
+  document.querySelectorAll('.nav-item').forEach(n => {
+    const onclick = n.getAttribute('onclick') || '';
+    const match = onclick.match(/navigate\('(\w+)'\)/);
+    if (match) {
+      const page = match[1];
+      n.style.display = currentUserTabs.includes(page) ? '' : 'none';
+    }
+  });
+  // Hide section labels if all nav items inside are hidden
+  document.querySelectorAll('.sidebar-section').forEach(section => {
+    const visibleItems = Array.from(section.querySelectorAll('.nav-item')).filter(n => n.style.display !== 'none');
+    section.style.display = visibleItems.length ? '' : 'none';
+  });
+}
+
+function showAccessDenied() {
+  document.querySelector('.sidebar').style.display = 'none';
+  document.querySelector('.main').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;">' +
+    '<div style="font-size:48px;">🔒</div>' +
+    '<h2 style="font-size:20px;font-weight:500;">Access Denied</h2>' +
+    '<p style="color:var(--text-muted);font-size:14px;">Your account (' + currentUserEmail + ') is not authorised to access this app.</p>' +
+    '<p style="color:var(--text-muted);font-size:13px;">Contact the administrator to request access.</p>' +
+    '<button class="btn" onclick="signOut()">Sign out</button>' +
+    '</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// BULK UPLOAD & TEMPLATES
+// ═══════════════════════════════════════════════════════
+
+// Template definitions - what columns the upload file should have
+const TEMPLATES = {
+  clients: {
+    columns: ['Name','Type','GSTNumber','State','Country','City','ContactPerson','Email','Phone','GSTApplicable','TDSRate'],
+    sample: [
+      ['Acme Corp','domestic','27AAPFU0939F1ZV','Maharashtra','','Mumbai','John Doe','john@acme.com','+91 9876543210','Yes','10'],
+      ['Globex Inc','international','','','United States','New York','Jane Smith','jane@globex.com','+1 2125550100','No','0']
+    ],
+    notes: 'Type: domestic or international. GSTApplicable: Yes or No. TDSRate: 0, 2, or 10.'
+  },
+  invoices: {
+    columns: ['InvoiceNumber','Date','ClientName','Currency','BaseAmount','Description'],
+    sample: [
+      ['INV/2025-26/001','2025-04-01','Acme Corp','INR','100000','Consulting services April 2025'],
+      ['INV/2025-26/002','2025-04-15','Globex Inc','USD','5000','Software development']
+    ],
+    notes: 'Date format: YYYY-MM-DD. Currency: INR, USD, SGD, EUR, GBP. Client must exist in Clients sheet first.'
+  },
+  expenses: {
+    columns: ['Date','Category','Subcategory','Vendor','PAN','Description','Currency','BaseAmount','GSTRate','TDSRate'],
+    sample: [
+      ['2025-04-01','Personnel','Salary','','','April salaries','INR','500000','0','0'],
+      ['2025-04-05','Software & Subscriptions','Productivity (Office 365, Google Workspace)','Zoho Corp','AABCZ1234D','Zoho subscription','INR','10000','18','0']
+    ],
+    notes: 'Date: YYYY-MM-DD. Category and Subcategory must exactly match values in the Categories sheet. GSTRate: 0 or 18. TDSRate: 0, 2, or 10. Vendor and PAN optional.'
+  },
+  employees: {
+    columns: ['Name','MonthlySalary','AnnualBonus','JoiningDate','Status','Notes'],
+    sample: [
+      ['Rahul Sharma', '55000', '50000', '2023-06-01', 'Active', 'Senior Developer'],
+      ['Priya Nair', '45000', '30000', '2024-01-15', 'Active', 'Designer'],
+      ['Amit Verma', '60000', '75000', '2022-03-10', 'Active', 'Lead Engineer']
+    ],
+    notes: 'MonthlySalary and AnnualBonus in INR. JoiningDate format: YYYY-MM-DD. Status: Active or Inactive.'
+  },
+  payments: {
+    columns: ['Date','Description','Type','AmountINR','Reference','PersonName'],
+    sample: [
+      ['2025-04-10','Payment from Acme Corp','Inward','118000','UTR123456',''],
+      ['2025-04-12','Salary April payout','Outward','500000','NEFT789',''],
+      ['2025-04-15','Loan from Ravi','Loan','200000','','Ravi Kumar']
+    ],
+    notes: 'Type: Inward, Outward, or Loan. PersonName only needed for Loan type.'
+  }
+};
+
+function downloadTemplate(module) {
+  const tmpl = TEMPLATES[module];
+  if (!tmpl) return;
+  const wb = XLSX.utils.book_new();
+  // Data sheet with sample
+  const data = [tmpl.columns, ...tmpl.sample];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+  // Notes sheet
+  const notesWs = XLSX.utils.aoa_to_sheet([['Instructions'], [tmpl.notes], [''], ['Leave optional fields blank. Do not change column headers.']]);
+  XLSX.utils.book_append_sheet(wb, notesWs, 'Instructions');
+  XLSX.writeFile(wb, 'Template_' + module + '.xlsx');
+  showToast('Template downloaded');
+}
+
+async function handleBulkUpload(module, file) {
+  if (!file) return;
+  showToast('Reading file...');
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+      if (!rows.length) { showToast('No data rows found in file'); return; }
+
+      let success = 0, errors = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const rowNum = i + 2; // +2 for header and 1-based
+        try {
+          if (module === 'employees') {
+            await bulkSaveEmployee(row, rowNum, errors);
+            success++;
+          } else if (module === 'clients') {
+            await bulkSaveClient(row, rowNum, errors);
+            success++;
+          } else if (module === 'invoices') {
+            const ok = await bulkSaveInvoice(row, rowNum, errors);
+            if (ok) success++;
+          } else if (module === 'expenses') {
+            await bulkSaveExpense(row, rowNum, errors);
+            success++;
+          } else if (module === 'payments') {
+            await bulkSavePayment(row, rowNum, errors);
+            success++;
+          }
+        } catch(e) {
+          errors.push('Row ' + rowNum + ': ' + e.message);
+        }
+      }
+
+      await loadAllData();
+      renderPage();
+
+      if (errors.length) {
+        showBulkResult(success, errors);
+      } else {
+        showToast(success + ' records uploaded successfully');
+      }
+    } catch(e) {
+      showToast('Error reading file: ' + e.message);
+      console.error(e);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showBulkResult(success, errors) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML =
+    '<div style="background:var(--bg);border-radius:var(--radius-lg);padding:24px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;">' +
+    '<h3 style="font-size:15px;font-weight:500;margin-bottom:16px;">Upload Complete</h3>' +
+    '<div style="background:var(--success-light);color:var(--success);padding:10px 14px;border-radius:var(--radius);margin-bottom:12px;font-size:13px;">' +
+    '✓ ' + success + ' records uploaded successfully</div>' +
+    (errors.length ? '<div style="background:var(--danger-light);color:var(--danger);padding:10px 14px;border-radius:var(--radius);font-size:13px;">' +
+    '<strong>' + errors.length + ' rows skipped:</strong><br>' +
+    errors.map(e => '• ' + e).join('<br>') + '</div>' : '') +
+    '<button class="btn btn-primary" style="margin-top:16px;width:100%;" onclick="this.parentElement.parentElement.remove()">Close</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+async function bulkSaveEmployee(row, rowNum, errors) {
+  const name = (row['Name'] || '').toString().trim();
+  const salary = parseFloat(row['MonthlySalary']) || 0;
+  if (!name) { errors.push('Row ' + rowNum + ': Name is required'); return; }
+  if (!salary) { errors.push('Row ' + rowNum + ': MonthlySalary is required'); return; }
+
+  // Skip if employee with same name already exists
+  if (DATA.employees.find(e => e.Name.toLowerCase() === name.toLowerCase())) {
+    errors.push('Row ' + rowNum + ': Employee "' + name + '" already exists — skipped');
+    return;
+  }
+
+  const dateRaw = row['JoiningDate'];
+  let joiningDate = '';
+  if (dateRaw instanceof Date) {
+    joiningDate = dateRaw.toISOString().split('T')[0];
+  } else {
+    joiningDate = (dateRaw || '').toString().trim();
+  }
+
+  const status = (row['Status'] || 'Active').toString().trim();
+  if (!['Active','Inactive'].includes(status)) {
+    errors.push('Row ' + rowNum + ': Status must be Active or Inactive');
+    return;
+  }
+
+  const dataRow = [
+    genId(), name, salary,
+    parseFloat(row['AnnualBonus']) || 0,
+    joiningDate, status,
+    row['Notes'] || ''
+  ];
+  await appendRow(SHEETS.employees, dataRow);
+}
+
+async function bulkSaveClient(row, rowNum, errors) {
+  const name = (row['Name'] || '').toString().trim();
+  const type = (row['Type'] || 'domestic').toString().trim().toLowerCase();
+  if (!name) { errors.push('Row ' + rowNum + ': Name is required'); return; }
+
+  // Skip if already exists
+  if (DATA.clients.find(c => c.Name.toLowerCase() === name.toLowerCase())) {
+    errors.push('Row ' + rowNum + ': Client "' + name + '" already exists — skipped');
+    return;
+  }
+
+  const dataRow = [
+    genId(), name, type,
+    row['GSTNumber'] || '',
+    type === 'domestic' ? (row['State'] || '') : '',
+    type === 'international' ? (row['Country'] || '') : 'India',
+    row['City'] || '',
+    row['ContactPerson'] || '',
+    row['Email'] || '',
+    row['Phone'] || '',
+    type === 'international' ? 'No' : (row['GSTApplicable'] || 'Yes'),
+    row['TDSRate'] || '0',
+    ''
+  ];
+  await appendRow(SHEETS.clients, dataRow);
+}
+
+async function bulkSaveInvoice(row, rowNum, errors) {
+  const invNum = (row['InvoiceNumber'] || '').toString().trim();
+  const clientName = (row['ClientName'] || '').toString().trim();
+  const base = parseFloat(row['BaseAmount']) || 0;
+  const dateRaw = row['Date'];
+
+  if (!invNum) { errors.push('Row ' + rowNum + ': InvoiceNumber is required'); return false; }
+  if (!clientName) { errors.push('Row ' + rowNum + ': ClientName is required'); return false; }
+  if (!base) { errors.push('Row ' + rowNum + ': BaseAmount is required'); return false; }
+
+  // Client must exist
+  const client = DATA.clients.find(c => c.Name.toLowerCase() === clientName.toLowerCase());
+  if (!client) {
+    errors.push('Row ' + rowNum + ': Client "' + clientName + '" not found. Create client first.');
+    return false;
+  }
+
+  // Format date
+  let dateStr = '';
+  if (dateRaw instanceof Date) {
+    dateStr = dateRaw.toISOString().split('T')[0];
+  } else {
+    dateStr = (dateRaw || '').toString().trim();
+  }
+  if (!dateStr) { errors.push('Row ' + rowNum + ': Date is required'); return false; }
+
+  const currency = (row['Currency'] || 'INR').toString().trim();
+  const gstType = calcGSTType(client);
+  const tdsRate = parseFloat(client.TDSRate || 0);
+
+  let cgst = 0, sgst = 0, igst = 0;
+  if (gstType === 'cgst_sgst') { cgst = base * 0.09; sgst = base * 0.09; }
+  else if (gstType === 'igst') { igst = base * 0.18; }
+  const totalTax = cgst + sgst + igst;
+  const invoiceTotal = base + totalTax;
+  const tdsAmt = base * tdsRate / 100;
+  const netReceivable = invoiceTotal - tdsAmt;
+
+  const dataRow = [
+    genId(), invNum, dateStr,
+    client.ID, client.Name,
+    row['Description'] || '',
+    currency, base, gstType,
+    gstType === 'cgst_sgst' ? 9 : 0,
+    gstType === 'cgst_sgst' ? 9 : 0,
+    gstType === 'igst' ? 18 : 0,
+    round2(cgst), round2(sgst), round2(igst),
+    round2(totalTax), round2(invoiceTotal),
+    tdsRate, round2(tdsAmt), round2(netReceivable),
+    round2(netReceivable * getRate(currency)), getRate(currency),
+    'Unpaid',
+    client.Type === 'international' ? 'Yes' : 'No',
+    ''
+  ];
+  await appendRow(SHEETS.invoices, dataRow);
+  return true;
+}
+
+async function bulkSaveExpense(row, rowNum, errors) {
+  const dateRaw = row['Date'];
+  const cat = (row['Category'] || '').toString().trim();
+  const subcat = (row['Subcategory'] || '').toString().trim();
+  const base = parseFloat(row['BaseAmount']) || 0;
+
+  if (!cat) { errors.push('Row ' + rowNum + ': Category is required'); return; }
+  if (!subcat) { errors.push('Row ' + rowNum + ': Subcategory is required'); return; }
+
+  // Validate against Categories sheet
+  const validCat = DATA.categories.find(c => c.Category.toLowerCase() === cat.toLowerCase() && c.Subcategory.toLowerCase() === subcat.toLowerCase());
+  if (!validCat) {
+    errors.push('Row ' + rowNum + ': "' + cat + ' / ' + subcat + '" is not a valid category-subcategory pair. Check Categories sheet.');
+    return;
+  }
+
+  if (!base) { errors.push('Row ' + rowNum + ': BaseAmount is required'); return; }
+
+  let dateStr = '';
+  if (dateRaw instanceof Date) {
+    dateStr = dateRaw.toISOString().split('T')[0];
+  } else {
+    dateStr = (dateRaw || '').toString().trim();
+  }
+  if (!dateStr) { errors.push('Row ' + rowNum + ': Date is required'); return; }
+
+  const gstRate = parseFloat(row['GSTRate']) || 0;
+  const tdsRate = parseFloat(row['TDSRate']) || 0;
+  const gstAmt = round2(base * gstRate / 100);
+  const total = round2(base + gstAmt);
+  const tdsAmt = round2(base * tdsRate / 100);
+  const netPayable = round2(total - tdsAmt);
+  const currency = row['Currency'] || 'INR';
+  const rate = getRate(currency);
+
+  const dataRow = [
+    genId(), dateStr, validCat.Category, validCat.Subcategory,
+    row['Vendor'] || '', row['PAN'] || '',
+    row['Description'] || '',
+    currency,
+    base, gstRate, gstAmt, tdsRate, tdsAmt, total, netPayable,
+    round2(netPayable * rate), rate,
+    'Unpaid', ''
+  ];
+  await appendRow(SHEETS.expenses, dataRow);
+}
+
+async function bulkSavePayment(row, rowNum, errors) {
+  const dateRaw = row['Date'];
+  const type = (row['Type'] || '').toString().trim();
+  const amount = parseFloat(row['AmountINR']) || 0;
+
+  if (!type) { errors.push('Row ' + rowNum + ': Type is required (Inward/Outward/Loan)'); return; }
+  if (!amount) { errors.push('Row ' + rowNum + ': AmountINR is required'); return; }
+
+  let dateStr = '';
+  if (dateRaw instanceof Date) {
+    dateStr = dateRaw.toISOString().split('T')[0];
+  } else {
+    dateStr = (dateRaw || '').toString().trim();
+  }
+  if (!dateStr) { errors.push('Row ' + rowNum + ': Date is required'); return; }
+
+  const dataRow = [
+    genId(), dateStr,
+    row['Description'] || '',
+    type, amount,
+    row['Reference'] || '',
+    row['PersonName'] || '',
+    'Active'
+  ];
+  await appendRow(SHEETS.payments, dataRow);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1687,15 +2903,22 @@ function renderDashboard() {
   const now = new Date();
   const fyStart = now.getMonth() >= 3 ? new Date(now.getFullYear(), 3, 1) : new Date(now.getFullYear()-1, 3, 1);
 
-  const fyInvoices = DATA.invoices.filter(i => new Date(i.Date) >= fyStart);
-  const totalInvoiced = fyInvoices.reduce((s, i) => s + parseFloat(i.InvoiceTotal || 0), 0);
+  const fyInvoices = DATA.invoices.filter(i => parseLocalDate(i.Date) >= fyStart);
+  // Use INRValue (locked at entry-time rate) so mixed currencies don't get summed incorrectly.
+  // Falls back to InvoiceTotal for old records that predate INRValue (assumed INR).
+  const totalInvoiced = fyInvoices.reduce((s, i) => s + parseFloat(i.INRValue || i.InvoiceTotal || 0), 0);
   const pendingInvoices = DATA.invoices.filter(i => i.Status === 'Unpaid' || i.Status === 'Partial');
-  const pendingAmt = pendingInvoices.reduce((s, i) => s + parseFloat(i.NetReceivable || 0), 0);
+  const pendingAmt = pendingInvoices.reduce((s, i) => {
+    const inrVal = parseFloat(i.INRValue || i.NetReceivable || 0);
+    const paid = getTotalPaid('Invoice', i.ID);
+    return s + Math.max(0, inrVal - paid);
+  }, 0);
 
-  const fyExpenses = DATA.expenses.filter(e => new Date(e.Date) >= fyStart);
-  const totalExp = fyExpenses.reduce((s, e) => s + parseFloat(e.TotalPayable || 0), 0);
+  const fyExpenses = DATA.expenses.filter(e => parseLocalDate(e.Date) >= fyStart);
+  const totalExp = fyExpenses.reduce((s, e) => s + parseFloat(e.INRValue || e.TotalPayable || 0), 0);
 
-  const futureAmt = DATA.receivables.reduce((s, r) => s + parseFloat(r.Amount || 0), 0);
+  // Future receivables don't have a locked rate yet — convert at current Currency Master rate
+  const futureAmt = DATA.receivables.reduce((s, r) => s + (parseFloat(r.Amount || 0) * getRate(r.Currency)), 0);
 
   document.getElementById('m-invoiced').textContent = fmtINR(totalInvoiced);
   document.getElementById('m-inv-pending').textContent = fmtINR(pendingAmt);
@@ -1703,7 +2926,7 @@ function renderDashboard() {
   document.getElementById('m-future').textContent = fmtINR(futureAmt);
 
   // Recent invoices
-  const recent = [...DATA.invoices].sort((a,b) => new Date(b.Date) - new Date(a.Date)).slice(0, 5);
+  const recent = [...DATA.invoices].sort((a,b) => parseLocalDate(b.Date) - parseLocalDate(a.Date)).slice(0, 5);
   const invEl = document.getElementById('dash-recent-invoices');
   if (!recent.length) {
     invEl.innerHTML = '<div class="empty-state"><p>No invoices yet</p></div>';
@@ -1712,7 +2935,7 @@ function renderDashboard() {
       ${recent.map(i => `<tr>
         <td style="padding:6px 0;border-bottom:0.5px solid var(--border);">${i.InvoiceNumber}</td>
         <td style="padding:6px 0;border-bottom:0.5px solid var(--border);color:var(--text-muted);">${i.ClientName}</td>
-        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);text-align:right;">${i.Currency} ${fmtNum(i.InvoiceTotal)}</td>
+        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);text-align:right;">₹${fmtNum(i.INRValue || i.InvoiceTotal)}</td>
         <td style="padding:6px 4px;border-bottom:0.5px solid var(--border);text-align:right;">${statusBadge(i.Status)}</td>
       </tr>`).join('')}
     </table>`;
@@ -1727,7 +2950,7 @@ function renderDashboard() {
       ${DATA.receivables.slice(0,5).map(r => `<tr>
         <td style="padding:6px 0;border-bottom:0.5px solid var(--border);">${r.ClientName}</td>
         <td style="padding:6px 0;border-bottom:0.5px solid var(--border);color:var(--text-muted);">${r.ExpectedDate || '—'}</td>
-        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);text-align:right;">${r.Currency} ${fmtNum(r.Amount)}</td>
+        <td style="padding:6px 0;border-bottom:0.5px solid var(--border);text-align:right;">₹${fmtNum(parseFloat(r.Amount || 0) * getRate(r.Currency))}</td>
       </tr>`).join('')}
     </table>`;
   }
@@ -1843,6 +3066,12 @@ async function saveClient() {
 // ═══════════════════════════════════════════════════════
 // INVOICES
 // ═══════════════════════════════════════════════════════
+// ── Currency conversion helper ──────────────────────────────
+function getRate(currency) {
+  const row = DATA.currencyRates.find(r => r.Currency === currency);
+  return row ? parseFloat(row.RateToINR) || 1 : 1;
+}
+
 function calcGSTType(client) {
   if (!client || client.Type === 'international' || client.GSTApplicable === 'No') return 'none';
   if (client.State === 'Karnataka') return 'cgst_sgst';
@@ -1880,6 +3109,15 @@ function calcInvoice() {
   document.getElementById('bd-tds').textContent = '− ' + sym + fmtNum(tdsAmt);
   document.getElementById('bd-net').textContent = sym + fmtNum(netReceivable);
 
+  const inrRow = document.getElementById('bd-inr-row');
+  if (currency !== 'INR') {
+    const rate = getRate(currency);
+    document.getElementById('bd-inr').textContent = '₹' + fmtNum(netReceivable * rate) + ' (rate: ' + rate + ')';
+    inrRow.style.display = '';
+  } else {
+    inrRow.style.display = 'none';
+  }
+
   const gstLabel = gstType === 'none' ? (client?.Type === 'international' ? '🌐 International — zero-rated export, no GST' : '⊘ GST not applicable') :
     gstType === 'cgst_sgst' ? '🏠 Karnataka client — CGST 9% + SGST 9%' : '🇮🇳 Inter-state — IGST 18%';
   document.getElementById('bd-gst-type').textContent = gstLabel;
@@ -1905,33 +3143,36 @@ function renderInvoices() {
     const mst = !status || i.Status === status;
     const mc = !clientId || i.ClientID === clientId;
     return ms && mst && mc;
-  }).sort((a,b) => new Date(b.Date) - new Date(a.Date));
+  }).sort((a,b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
 
   const tbody = document.getElementById('invoicesTable');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📄</div><p>No invoices yet.</p></div></td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">📄</div><p>No invoices yet.</p></div></td></tr>';
     return;
   }
 
-  tbody.innerHTML = rows.map(i => `
-    <tr>
-      <td><span style="font-weight:500;font-size:12px;">${i.InvoiceNumber}</span>${i.IsExport === 'Yes' ? ' <span class="badge badge-warning" style="font-size:10px;">Export</span>' : ''}</td>
-      <td style="color:var(--text-muted);font-size:12px;">${fmtDate(i.Date)}</td>
-      <td>${i.ClientName}</td>
-      <td><span class="badge badge-neutral">${i.Currency}</span></td>
-      <td class="text-right">${fmtNum(i.BaseAmount)}</td>
-      <td class="text-right" style="color:var(--text-muted);">${fmtNum(i.TotalTax)}</td>
-      <td class="text-right text-danger">${fmtNum(i.TDSAmount)}</td>
-      <td class="text-right text-success"><strong>${fmtNum(i.NetReceivable)}</strong></td>
-      <td>${statusBadge(i.Status)}</td>
-      <td>
-        <div style="display:flex;gap:4px;justify-content:flex-end;">
-          <button class="btn btn-sm" onclick="editInvoice(${DATA.invoices.indexOf(i)})">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteRecord('invoices','${i.ID}',${DATA.invoices.indexOf(i)})">×</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = rows.map(i => {
+    const inrVal = parseFloat(i.INRValue || 0);
+    return '<tr>' +
+      '<td><span style="font-weight:500;font-size:12px;">' + i.InvoiceNumber + '</span>' + (i.IsExport === 'Yes' ? ' <span class="badge badge-warning" style="font-size:10px;">Export</span>' : '') + '</td>' +
+      '<td style="color:var(--text-muted);font-size:12px;">' + fmtDate(i.Date) + '</td>' +
+      '<td>' + i.ClientName + '</td>' +
+      '<td><span class="badge badge-neutral">' + i.Currency + '</span></td>' +
+      '<td class="text-right">' + fmtNum(i.BaseAmount) + '</td>' +
+      '<td class="text-right" style="color:var(--text-muted);">' + fmtNum(i.TotalTax) + '</td>' +
+      '<td class="text-right text-danger">' + fmtNum(i.TDSAmount) + '</td>' +
+      '<td class="text-right text-success"><strong>' + fmtNum(i.NetReceivable) + '</strong></td>' +
+      '<td class="text-right" style="color:var(--text-muted);">' + (inrVal ? '₹' + fmtNum(inrVal) : '—') + '</td>' +
+      '<td>' + ((i.Status === 'Paid' || i.Status === 'Partial') ?
+        '<span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" onclick="showInvoiceTransactions(\'' + i.ID + '\')">' + statusBadge(i.Status) + '</span>' :
+        statusBadge(i.Status)) + '</td>' +
+      '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
+        (i.Currency !== 'INR' && i.Status !== 'Paid' ? '<button class="btn btn-sm" title="Mark fully paid (override)" onclick="markInvoiceFullyPaid(\'' + i.ID + '\')">✓ Paid</button>' : '') +
+        '<button class="btn btn-sm" onclick="editInvoice(' + DATA.invoices.indexOf(i) + ')">Edit</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteRecord(\'invoices\',\'' + i.ID + '\',' + DATA.invoices.indexOf(i) + ')">×</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
 }
 
 function openInvoiceModal(idx) {
@@ -1958,6 +3199,56 @@ function openInvoiceModal(idx) {
 
 function editInvoice(idx) { openInvoiceModal(idx); }
 
+function showInvoiceTransactions(invoiceId) {
+  const inv = DATA.invoices.find(i => i.ID === invoiceId);
+  if (!inv) return;
+
+  const txns = DATA.transactions
+    .filter(t => t.RefType === 'Invoice' && t.RefID === invoiceId)
+    .sort((a, b) => parseLocalDate(a.PaymentDate) - parseLocalDate(b.PaymentDate));
+
+  const totalPaid = txns.reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
+  const net = parseFloat(inv.NetReceivable || 0);
+  const outstanding = net - totalPaid;
+
+  const rowsHtml = txns.map(t => {
+    const payment = DATA.payments.find(p => p.ID === t.PaymentID);
+    return '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(t.PaymentDate) + '</td>' +
+      '<td>' + (payment?.Description || '—') + '</td>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + (payment?.Reference || '—') + '</td>' +
+      '<td class="text-right"><strong>₹' + fmtNum(t.AmountINR) + '</strong></td>' +
+      '</tr>';
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.style.zIndex = '300';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:600px;">' +
+      '<div class="modal-header">' +
+        '<h3>Payments — ' + inv.InvoiceNumber + '</h3>' +
+        '<button class="btn btn-sm" onclick="this.closest(\'.modal-overlay\').remove()">✕</button>' +
+      '</div>' +
+      '<div class="modal-body">' +
+        '<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">' +
+          '<div class="metric-card"><div class="metric-label">Net Receivable</div><div class="metric-value" style="font-size:16px;">' + inv.Currency + ' ' + fmtNum(net) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Total Paid</div><div class="metric-value text-success" style="font-size:16px;">₹' + fmtNum(totalPaid) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Outstanding</div><div class="metric-value ' + (outstanding > 0 ? 'text-danger' : '') + '" style="font-size:16px;">₹' + fmtNum(outstanding) + '</div></div>' +
+        '</div>' +
+        (txns.length ?
+          '<div class="table-wrap"><table>' +
+            '<thead><tr><th>Date</th><th>Payment Description</th><th>Reference</th><th>Amount</th></tr></thead>' +
+            '<tbody>' + rowsHtml + '</tbody>' +
+          '</table></div>'
+          : '<div class="empty-state"><p>No payment transactions found.</p></div>') +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
 async function saveInvoice() {
   const num = getVal('i-num').trim();
   const clientId = getVal('i-client');
@@ -1978,6 +3269,18 @@ async function saveInvoice() {
   const tdsAmt = base * (tdsRate / 100);
   const netReceivable = invoiceTotal - tdsAmt;
 
+  // INRValue is locked at the rate active when the invoice is first created.
+  // On edit, keep the originally stored INRValue/RateUsed rather than recalculating.
+  const existingInv = editingId ? DATA.invoices.find(i => i.ID === editingId) : null;
+  let inrValue, rateUsed;
+  if (existingInv && existingInv.INRValue) {
+    inrValue = parseFloat(existingInv.INRValue);
+    rateUsed = parseFloat(existingInv.RateUsed) || getRate(currency);
+  } else {
+    rateUsed = getRate(currency);
+    inrValue = round2(netReceivable * rateUsed);
+  }
+
   const row = [
     editingId || genId(),
     num,
@@ -1994,7 +3297,8 @@ async function saveInvoice() {
     round2(cgst), round2(sgst), round2(igst),
     round2(totalTax), round2(invoiceTotal),
     tdsRate, round2(tdsAmt), round2(netReceivable),
-    editingId ? (DATA.invoices.find(i => i.ID === editingId)?.Status || 'Unpaid') : 'Unpaid',
+    inrValue, rateUsed,
+    existingInv ? (existingInv.Status || 'Unpaid') : 'Unpaid',
     client?.Type === 'international' ? 'Yes' : 'No',
     ''
   ];
@@ -2030,13 +3334,24 @@ function calcExpense() {
   const total = base + gstAmt;
   const tdsAmt = base * tdsRate;
   const netPayable = total - tdsAmt;
+  const currency = getVal('e-currency');
+  const sym = currSym(currency);
 
   document.getElementById('expenseBreakdown').style.display = '';
-  document.getElementById('ebd-base').textContent = '₹' + fmtNum(base);
-  document.getElementById('ebd-gst').textContent = gstAmt ? '+₹' + fmtNum(gstAmt) : 'Nil';
-  document.getElementById('ebd-total').textContent = '₹' + fmtNum(total);
-  document.getElementById('ebd-tds').textContent = tdsAmt ? '−₹' + fmtNum(tdsAmt) : 'Nil';
-  document.getElementById('ebd-net').textContent = '₹' + fmtNum(netPayable);
+  document.getElementById('ebd-base').textContent = sym + fmtNum(base);
+  document.getElementById('ebd-gst').textContent = gstAmt ? '+' + sym + fmtNum(gstAmt) : 'Nil';
+  document.getElementById('ebd-total').textContent = sym + fmtNum(total);
+  document.getElementById('ebd-tds').textContent = tdsAmt ? '−' + sym + fmtNum(tdsAmt) : 'Nil';
+  document.getElementById('ebd-net').textContent = sym + fmtNum(netPayable);
+
+  const inrRow = document.getElementById('ebd-inr-row');
+  if (currency !== 'INR') {
+    const rate = getRate(currency);
+    document.getElementById('ebd-inr').textContent = '₹' + fmtNum(netPayable * rate) + ' (rate: ' + rate + ')';
+    inrRow.style.display = '';
+  } else {
+    inrRow.style.display = 'none';
+  }
 }
 
 function renderExpenses() {
@@ -2044,10 +3359,10 @@ function renderExpenses() {
   const status = document.getElementById('expStatusFilter')?.value || '';
 
   let rows = DATA.expenses.filter(e => {
-    const ms = !search || (e.Category||'').toLowerCase().includes(search) || (e.Vendor||'').toLowerCase().includes(search) || (e.Description||'').toLowerCase().includes(search);
+    const ms = !search || (e.Category||'').toLowerCase().includes(search) || (e.Subcategory||'').toLowerCase().includes(search) || (e.Vendor||'').toLowerCase().includes(search) || (e.Description||'').toLowerCase().includes(search);
     const mst = !status || e.Status === status;
     return ms && mst;
-  }).sort((a,b) => new Date(b.Date) - new Date(a.Date));
+  }).sort((a,b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
 
   const tbody = document.getElementById('expensesTable');
   if (!rows.length) {
@@ -2058,16 +3373,17 @@ function renderExpenses() {
   tbody.innerHTML = rows.map(e => `
     <tr>
       <td style="color:var(--text-muted);font-size:12px;">${fmtDate(e.Date)}</td>
-      <td><span style="font-weight:500;">${e.Category}</span></td>
+      <td><span style="font-weight:500;">${e.Category}</span>${e.Subcategory ? '<br><span style="font-size:11px;color:var(--text-muted);">' + e.Subcategory + '</span>' : ''}</td>
       <td style="color:var(--text-muted);">${e.Vendor || '—'}</td>
       <td><span class="badge badge-neutral">${e.Currency}</span></td>
       <td class="text-right">${fmtNum(e.BaseAmount)}</td>
       <td class="text-right text-success">${fmtNum(e.GSTAmount) || '—'}</td>
       <td class="text-right text-danger">${fmtNum(e.TDSAmount) || '—'}</td>
       <td class="text-right"><strong>${fmtNum(e.NetPayable)}</strong></td>
-      <td>${statusBadge(e.Status)}</td>
+      <td>${(e.Status === 'Paid' || e.Status === 'Partial') ? '<span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" onclick="showExpenseTransactions(\'' + e.ID + '\')">' + statusBadge(e.Status) + '</span>' : statusBadge(e.Status)}</td>
       <td>
         <div style="display:flex;gap:4px;justify-content:flex-end;">
+          ${(e.Currency !== 'INR' && e.Status !== 'Paid') ? '<button class="btn btn-sm" title="Mark fully paid (override)" onclick="markExpenseFullyPaid(\'' + e.ID + '\')">✓ Paid</button>' : ''}
           <button class="btn btn-sm" onclick="editExpense(${DATA.expenses.indexOf(e)})">Edit</button>
           <button class="btn btn-sm btn-danger" onclick="deleteRecord('expenses','${e.ID}',${DATA.expenses.indexOf(e)})">×</button>
         </div>
@@ -2076,12 +3392,43 @@ function renderExpenses() {
   `).join('');
 }
 
+// ── Category helpers ──────────────────────────────────────
+function getCategoryList() {
+  const cats = [...new Set(DATA.categories.map(c => c.Category))];
+  return cats;
+}
+
+function getSubcategories(category) {
+  return DATA.categories.filter(c => c.Category === category).map(c => c.Subcategory);
+}
+
+function populateCategoryDropdown(selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const cats = getCategoryList();
+  sel.innerHTML = '<option value="">Select category...</option>' +
+    cats.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+}
+
+function onCategoryChange() {
+  const cat = getVal('e-cat');
+  const subSel = document.getElementById('e-subcat');
+  const subs = getSubcategories(cat);
+  subSel.innerHTML = subs.length
+    ? '<option value="">Select subcategory...</option>' + subs.map(s => '<option value="' + s + '">' + s + '</option>').join('')
+    : '<option value="">No subcategories</option>';
+}
+
 function openExpenseModal(idx) {
   editingId = idx !== undefined ? DATA.expenses[idx].ID : null;
   document.getElementById('expenseModalTitle').textContent = editingId ? 'Edit Expense' : 'Add Expense';
   const e = editingId ? DATA.expenses.find(x => x.ID === editingId) : {};
+
+  populateCategoryDropdown('e-cat');
   setVal('e-date', e.Date || today());
   setVal('e-cat', e.Category || '');
+  onCategoryChange();
+  setVal('e-subcat', e.Subcategory || '');
   setVal('e-vendor', e.Vendor || '');
   setVal('e-pan', e.PAN || '');
   setVal('e-desc', e.Description || '');
@@ -2096,11 +3443,62 @@ function openExpenseModal(idx) {
 
 function editExpense(idx) { openExpenseModal(idx); }
 
+function showExpenseTransactions(expenseId) {
+  const exp = DATA.expenses.find(e => e.ID === expenseId);
+  if (!exp) return;
+
+  const txns = DATA.transactions
+    .filter(t => t.RefType === 'Expense' && t.RefID === expenseId)
+    .sort((a, b) => parseLocalDate(a.PaymentDate) - parseLocalDate(b.PaymentDate));
+
+  const totalPaid = txns.reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
+  const net = parseFloat(exp.NetPayable || 0);
+  const outstanding = net - totalPaid;
+
+  const rowsHtml = txns.map(t => {
+    const payment = DATA.payments.find(p => p.ID === t.PaymentID);
+    return '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(t.PaymentDate) + '</td>' +
+      '<td>' + (payment?.Description || '—') + '</td>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + (payment?.Reference || '—') + '</td>' +
+      '<td class="text-right"><strong>₹' + fmtNum(t.AmountINR) + '</strong></td>' +
+      '</tr>';
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.style.zIndex = '300';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:600px;">' +
+      '<div class="modal-header">' +
+        '<h3>Payments — ' + exp.Category + (exp.Subcategory ? ' / ' + exp.Subcategory : '') + '</h3>' +
+        '<button class="btn btn-sm" onclick="this.closest(\'.modal-overlay\').remove()">✕</button>' +
+      '</div>' +
+      '<div class="modal-body">' +
+        '<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">' +
+          '<div class="metric-card"><div class="metric-label">Net Payable</div><div class="metric-value" style="font-size:16px;">' + exp.Currency + ' ' + fmtNum(net) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Total Paid</div><div class="metric-value text-success" style="font-size:16px;">₹' + fmtNum(totalPaid) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Outstanding</div><div class="metric-value ' + (outstanding > 0 ? 'text-danger' : '') + '" style="font-size:16px;">₹' + fmtNum(outstanding) + '</div></div>' +
+        '</div>' +
+        (txns.length ?
+          '<div class="table-wrap"><table>' +
+            '<thead><tr><th>Date</th><th>Payment Description</th><th>Reference</th><th>Amount</th></tr></thead>' +
+            '<tbody>' + rowsHtml + '</tbody>' +
+          '</table></div>'
+          : '<div class="empty-state"><p>No payment transactions found.</p></div>') +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
 async function saveExpense() {
   const date = getVal('e-date');
   const cat = getVal('e-cat').trim();
+  const subcat = getVal('e-subcat').trim();
   const base = parseFloat(getVal('e-amount')) || 0;
-  if (!date || !cat || !base) { showToast('Date, category and amount are required'); return; }
+  if (!date || !cat || !subcat || !base) { showToast('Date, category, subcategory and amount are required'); return; }
 
   const gstRate = parseFloat(getVal('e-gst-rate'));
   const tdsRate = parseFloat(getVal('e-tds-rate'));
@@ -2108,14 +3506,27 @@ async function saveExpense() {
   const total = base + gstAmt;
   const tdsAmt = base * tdsRate / 100;
   const netPayable = total - tdsAmt;
+  const currency = getVal('e-currency');
+
+  // INRValue locked at the rate active when first created; preserved on edit
+  const existingExp = editingId ? DATA.expenses.find(x => x.ID === editingId) : null;
+  let inrValue, rateUsed;
+  if (existingExp && existingExp.INRValue) {
+    inrValue = parseFloat(existingExp.INRValue);
+    rateUsed = parseFloat(existingExp.RateUsed) || getRate(currency);
+  } else {
+    rateUsed = getRate(currency);
+    inrValue = round2(netPayable * rateUsed);
+  }
 
   const row = [
     editingId || genId(),
-    date, cat,
+    date, cat, subcat,
     getVal('e-vendor'), getVal('e-pan'), getVal('e-desc'),
-    getVal('e-currency'), base, gstRate, round2(gstAmt),
+    currency, base, gstRate, round2(gstAmt),
     tdsRate, round2(tdsAmt), round2(total), round2(netPayable),
-    editingId ? (DATA.expenses.find(x => x.ID === editingId)?.Status || 'Unpaid') : 'Unpaid',
+    inrValue, rateUsed,
+    existingExp ? (existingExp.Status || 'Unpaid') : 'Unpaid',
     ''
   ];
 
@@ -2149,35 +3560,50 @@ function switchPayTab(tab, el) {
   renderPayments();
 }
 
-function renderPayments() {
-  let rows = [...DATA.payments].sort((a,b) => new Date(b.Date) - new Date(a.Date));
+// Get all transactions for a payment
+function getTxnsForPayment(paymentId) {
+  return DATA.transactions.filter(t => t.PaymentID === paymentId);
+}
 
-  if (currentPayTab === 'untagged') rows = rows.filter(p => !p.Tags || p.Tags === '');
-  else if (currentPayTab === 'inward') rows = rows.filter(p => p.Type === 'Inward');
+// Get total paid against an invoice or expense
+function getTotalPaid(refType, refId) {
+  return DATA.transactions
+    .filter(t => t.RefType === refType && t.RefID === refId)
+    .reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
+}
+
+function renderPayments() {
+  let rows = [...DATA.payments].sort((a,b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
+
+  if (currentPayTab === 'untagged') {
+    rows = rows.filter(p => p.Type !== 'Loan' && getTxnsForPayment(p.ID).length === 0);
+  } else if (currentPayTab === 'inward') rows = rows.filter(p => p.Type === 'Inward');
   else if (currentPayTab === 'outward') rows = rows.filter(p => p.Type === 'Outward');
 
   const tbody = document.getElementById('paymentsTable');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🏦</div><p>No payments yet.</p></div></td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">🏦</div><p>No payments yet.</p></div></td></tr>';
     return;
   }
 
   tbody.innerHTML = rows.map(p => {
-    const tagged = p.Tags && p.Tags !== '';
-    const tags = tagged ? JSON.parse(p.Tags || '[]') : [];
-    const tagDisplay = tags.length ? tags.map(t => `<span class="badge badge-blue" style="margin-right:3px;">${t.type}: ${t.ref}</span>`).join('') : '<span class="badge badge-warning">Needs tagging</span>';
+    const txns = getTxnsForPayment(p.ID);
+    const isTagged = p.Type === 'Loan' || txns.length > 0;
+    const tagDisplay = p.Type === 'Loan'
+      ? '<span class="badge badge-neutral">Loan — ' + (p.PersonName || '') + '</span>'
+      : txns.length
+        ? txns.map(t => '<span class="badge badge-blue" style="margin-right:3px;">' + t.RefType + ': ' + t.RefLabel + ' (₹' + fmtNum(t.AmountINR) + ')</span>').join('')
+        : '<span class="badge badge-warning">Needs tagging</span>';
 
-    return `<tr>
-      <td style="font-size:12px;color:var(--text-muted);">${fmtDate(p.Date)}</td>
-      <td>${p.Description}</td>
-      <td><span class="badge ${p.Type === 'Inward' ? 'badge-success' : p.Type === 'Loan' ? 'badge-neutral' : 'badge-danger'}">${p.Type}</span></td>
-      <td class="text-right"><strong>₹${fmtNum(p.AmountINR)}</strong></td>
-      <td>${tagDisplay}</td>
-      <td>${p.Type !== 'Loan' && !tagged ? `<button class="btn btn-sm" onclick="openTagModal(${DATA.payments.indexOf(p)})">Tag</button>` : ''}</td>
-      <td>
-        <button class="btn btn-sm btn-danger" onclick="deleteRecord('payments','${p.ID}',${DATA.payments.indexOf(p)})">×</button>
-      </td>
-    </tr>`;
+    return '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(p.Date) + '</td>' +
+      '<td>' + p.Description + '</td>' +
+      '<td><span class="badge ' + (p.Type === 'Inward' ? 'badge-success' : p.Type === 'Loan' ? 'badge-neutral' : 'badge-danger') + '">' + p.Type + '</span></td>' +
+      '<td class="text-right"><strong>₹' + fmtNum(p.AmountINR) + '</strong></td>' +
+      '<td>' + tagDisplay + '</td>' +
+      '<td>' + (!isTagged ? '<button class="btn btn-sm" onclick="openTagModal(\'' + p.ID + '\')">Tag</button>' : '') + '</td>' +
+      '<td><button class="btn btn-sm btn-danger" onclick="deletePaymentFull(\'' + p.ID + '\',' + DATA.payments.indexOf(p) + ')">×</button></td>' +
+      '</tr>';
   }).join('');
 }
 
@@ -2201,7 +3627,7 @@ function onPaymentTypeChange() {
 }
 
 function addTagRow() {
-  payTagRows.push({ type: 'Invoice', ref: '', amount: '' });
+  payTagRows.push({ type: 'Invoice', ref: '', refLabel: '', amount: '' });
   renderTagRows();
 }
 
@@ -2212,28 +3638,187 @@ function renderTagRows() {
 
   const invoiceOptions = DATA.invoices
     .filter(i => i.Status !== 'Paid')
-    .map(i => `<option value="${i.InvoiceNumber}">${i.InvoiceNumber} — ${i.ClientName} — Net: ${i.Currency} ${fmtNum(i.NetReceivable)}</option>`)
+    .map(i => '<option value="' + i.ID + '" data-label="' + i.InvoiceNumber + '">' + i.InvoiceNumber + ' — ' + i.ClientName + ' — Net: ' + i.Currency + ' ' + fmtNum(i.NetReceivable) + ' — Paid: ₹' + fmtNum(getTotalPaid('Invoice', i.ID)) + '</option>')
     .join('');
 
-  const expenseOptions = DATA.expenses
+  const expenseOptions = '<option value="__new__" data-label="">+ Add new expense...</option>' +
+    DATA.expenses
     .filter(e => e.Status !== 'Paid')
-    .map(e => `<option value="${e.ID}">${e.Category} — ${fmtDate(e.Date)} — ₹${fmtNum(e.NetPayable)}</option>`)
+    .map(e => '<option value="' + e.ID + '" data-label="' + e.Category + ' ' + fmtDate(e.Date) + '">' + e.Category + ' — ' + fmtDate(e.Date) + ' — ₹' + fmtNum(e.NetPayable) + ' — Paid: ₹' + fmtNum(getTotalPaid('Expense', e.ID)) + '</option>')
     .join('');
 
-  container.innerHTML = payTagRows.map((row, i) => `
-    <div style="display:flex;gap:8px;align-items:center;background:var(--bg-secondary);padding:8px;border-radius:var(--radius);">
-      <select style="width:100px;" onchange="payTagRows[${i}].type=this.value;renderTagRows()">
-        <option value="Invoice" ${row.type==='Invoice'?'selected':''}>Invoice</option>
-        ${payType === 'Outward' ? `<option value="Expense" ${row.type==='Expense'?'selected':''}>Expense</option>` : ''}
-      </select>
-      <select style="flex:1;" onchange="payTagRows[${i}].ref=this.value;">
-        <option value="">Select...</option>
-        ${row.type === 'Invoice' ? invoiceOptions : expenseOptions}
-      </select>
-      <input type="number" placeholder="Amount ₹" style="width:110px;" value="${row.amount}" oninput="payTagRows[${i}].amount=this.value;">
-      <button class="btn btn-sm btn-danger" onclick="payTagRows.splice(${i},1);renderTagRows();">×</button>
-    </div>
-  `).join('');
+  const loanOptions = '<option value="__new_loan__" data-label="">+ Add new loan...</option>' +
+    DATA.loans
+    .filter(l => l.Status !== 'Settled')
+    .map(l => {
+      const outstanding = parseFloat(l.AmountINR || 0) - getTotalRepaid(l.ID);
+      return '<option value="' + l.ID + '" data-label="Loan: ' + l.PersonName + '">' + l.PersonName + ' (' + l.Type + ') — ₹' + fmtNum(l.AmountINR) + ' — Outstanding: ₹' + fmtNum(outstanding) + '</option>';
+    })
+    .join('');
+
+  container.innerHTML = payTagRows.map((row, i) => {
+    const isNewExpense = row.type === 'Expense' && row.ref === '__new__';
+    return '<div style="background:var(--bg-secondary);padding:8px;border-radius:var(--radius);margin-bottom:6px;">' +
+      '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<select style="width:100px;" onchange="payTagRows[' + i + '].type=this.value;renderTagRows()">' +
+          '<option value="Invoice"' + (row.type==='Invoice'?' selected':'') + '>Invoice</option>' +
+          (payType === 'Outward' ? '<option value="Expense"' + (row.type==='Expense'?' selected':'') + '>Expense</option>' : '') +
+          (payType === 'Outward' ? '<option value="Salary"' + (row.type==='Salary'?' selected':'') + '>Salary</option>' : '') +
+          '<option value="Loan"' + (row.type==='Loan'?' selected':'') + '>Loan</option>' +
+        '</select>' +
+        (row.type === 'Salary' ?
+          ('<select style="flex:1;" onchange="onSalaryEmployeeChange(' + i + ', this)">' +
+            '<option value="">Select employee...</option>' +
+            DATA.employees.filter(e => e.Status === 'Active').map(e =>
+              '<option value="' + e.ID + '"' + (row.ref===e.ID?' selected':'') + '>' + e.Name + ' — ₹' + fmtNum(e.MonthlySalary) + '/mo</option>'
+            ).join('') +
+          '</select>')
+          :
+          ('<select style="flex:1;" onchange="onTagRefChange(' + i + ', this)">' +
+            '<option value="">Select...</option>' +
+            (row.type === 'Invoice' ? invoiceOptions : row.type === 'Loan' ? loanOptions : expenseOptions) +
+          '</select>')
+        ) +
+        (row.type !== 'Salary' ? '<input type="number" placeholder="Amount ₹" style="width:110px;" value="' + row.amount + '" oninput="payTagRows[' + i + '].amount=this.value;">' : '') +
+        '<button class="btn btn-sm btn-danger" onclick="payTagRows.splice(' + i + ',1);renderTagRows();">×</button>' +
+      '</div>' +
+      (row.type === 'Salary' && row.ref ?
+        '<div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border);">' +
+          '<div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Salary Breakdown</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+            '<div class="form-group"><label>Gross Salary (INR) *</label><input type="number" id="sal-gross-' + i + '" placeholder="50000" value="' + (row.salaryGross||'') + '" oninput="payTagRows[' + i + '].salaryGross=this.value;updateSalaryNet(' + i + ')"></div>' +
+            '<div class="form-group"><label>Loan Deduction (INR)</label><input type="number" id="sal-deduct-' + i + '" placeholder="0" value="' + (row.salaryDeduction||0) + '" oninput="payTagRows[' + i + '].salaryDeduction=this.value;updateSalaryNet(' + i + ')"></div>' +
+          '</div>' +
+          '<div class="breakdown-row" style="margin-top:8px;"><span class="breakdown-label">Net Bank Payment</span><span id="sal-net-' + i + '" class="text-success">₹' + fmtNum((parseFloat(row.salaryGross||0) - parseFloat(row.salaryDeduction||0))) + '</span></div>' +
+        '</div>'
+        : '') +
+      (row.type === 'Loan' && row.ref === '__new_loan__' ?
+        '<div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border);">' +
+        '<div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">New Loan</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+          '<div class="form-group"><label>Date *</label><input type="date" id="ql-date-' + i + '" value="' + today() + '"></div>' +
+          '<div class="form-group"><label>Type *</label><select id="ql-type-' + i + '"><option value="Taken">Taken</option><option value="Given">Given</option></select></div>' +
+          '<div class="form-group full"><label>Person Name *</label><input type="text" id="ql-person-' + i + '" placeholder="Lender/borrower name"></div>' +
+          '<div class="form-group"><label>Amount (INR) *</label><input type="number" id="ql-amount-' + i + '" placeholder="0" min="0"></div>' +
+          '<div class="form-group"><label>Description</label><input type="text" id="ql-desc-' + i + '" placeholder="Purpose"></div>' +
+        '</div>' +
+        '<button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="saveQuickLoan(' + i + ')">Save & Select Loan</button>' +
+        '</div>' : '') +
+      (isNewExpense ? '<div id="quick-expense-' + i + '" style="margin-top:10px;padding:10px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border);">' +
+        '<div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">New Expense</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
+          '<div class="form-group"><label>Date *</label><input type="date" id="qe-date-' + i + '" value="' + today() + '"></div>' +
+          '<div class="form-group"><label>Category *</label><select id="qe-cat-' + i + '" onchange="onQuickExpenseCatChange(' + i + ')"><option value="">Select...</option>' + getCategoryList().map(c => '<option value="' + c + '">' + c + '</option>').join('') + '</select></div>' +
+          '<div class="form-group"><label>Subcategory *</label><select id="qe-subcat-' + i + '"><option value="">Select category first</option></select></div>' +
+          '<div class="form-group"><label>Vendor</label><input type="text" id="qe-vendor-' + i + '" placeholder="Optional"></div>' +
+          '<div class="form-group"><label>PAN</label><input type="text" id="qe-pan-' + i + '" placeholder="Optional"></div>' +
+          '<div class="form-group" style="grid-column:1/-1"><label>Description</label><input type="text" id="qe-desc-' + i + '" placeholder="What is this for?"></div>' +
+          '<div class="form-group"><label>Currency</label><select id="qe-currency-' + i + '"><option value="INR">INR</option><option value="USD">USD</option><option value="SGD">SGD</option><option value="EUR">EUR</option><option value="GBP">GBP</option></select></div>' +
+          '<div class="form-group"><label>Amount *</label><input type="number" id="qe-amount-' + i + '" placeholder="0" min="0"></div>' +
+          '<div class="form-group"><label>GST Rate</label><select id="qe-gst-' + i + '"><option value="0">0%</option><option value="18">18%</option></select></div>' +
+          '<div class="form-group"><label>TDS Rate</label><select id="qe-tds-' + i + '"><option value="0">0%</option><option value="2">2%</option><option value="10">10%</option></select></div>' +
+        '</div>' +
+        '<button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="saveQuickExpense(' + i + ')">Save & Select Expense</button>' +
+      '</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function onTagRefChange(i, sel) {
+  payTagRows[i].ref = sel.value;
+  payTagRows[i].refLabel = sel.options[sel.selectedIndex].getAttribute('data-label') || '';
+  if (sel.value === '__new__' || sel.value === '__new_loan__') {
+    renderTagRows();
+  }
+}
+
+function onSalaryEmployeeChange(i, sel) {
+  payTagRows[i].ref = sel.value;
+  const emp = DATA.employees.find(e => e.ID === sel.value);
+  if (emp) {
+    payTagRows[i].refLabel = emp.Name;
+    payTagRows[i].salaryGross = parseFloat(emp.MonthlySalary) || 0;
+    payTagRows[i].salaryDeduction = 0;
+    payTagRows[i].amount = payTagRows[i].salaryGross;
+  }
+  renderTagRows();
+}
+
+function updateSalaryNet(i) {
+  const gross = parseFloat(document.getElementById('sal-gross-' + i)?.value) || 0;
+  const deduct = parseFloat(document.getElementById('sal-deduct-' + i)?.value) || 0;
+  const netEl = document.getElementById('sal-net-' + i);
+  if (netEl) netEl.textContent = '₹' + fmtNum(gross - deduct);
+  payTagRows[i].amount = gross - deduct;
+}
+
+async function saveQuickLoan(rowIdx) {
+  const date = document.getElementById('ql-date-' + rowIdx)?.value || '';
+  const person = (document.getElementById('ql-person-' + rowIdx)?.value || '').trim();
+  const amount = parseFloat(document.getElementById('ql-amount-' + rowIdx)?.value) || 0;
+  if (!date || !person || !amount) { showToast('Date, person name and amount are required'); return; }
+
+  const type = document.getElementById('ql-type-' + rowIdx)?.value || 'Taken';
+  const desc = document.getElementById('ql-desc-' + rowIdx)?.value || '';
+  const newId = genId();
+
+  const dataRow = [newId, date, person, type, amount, desc, 'Pending', ''];
+  try {
+    await appendRow(SHEETS.loans, dataRow);
+    await loadAllData();
+    payTagRows[rowIdx].ref = newId;
+    payTagRows[rowIdx].refLabel = 'Loan: ' + person;
+    showToast('Loan saved and selected');
+    renderTagRows();
+  } catch(e) {
+    showToast('Error saving loan: ' + e.message);
+  }
+}
+
+function onQuickExpenseCatChange(rowIdx) {
+  const cat = document.getElementById('qe-cat-' + rowIdx)?.value || '';
+  const subSel = document.getElementById('qe-subcat-' + rowIdx);
+  const subs = getSubcategories(cat);
+  if (subSel) {
+    subSel.innerHTML = subs.length
+      ? '<option value="">Select subcategory...</option>' + subs.map(s => '<option value="' + s + '">' + s + '</option>').join('')
+      : '<option value="">No subcategories</option>';
+  }
+}
+
+async function saveQuickExpense(rowIdx) {
+  const date = document.getElementById('qe-date-' + rowIdx)?.value || '';
+  const cat = (document.getElementById('qe-cat-' + rowIdx)?.value || '').trim();
+  const subcat = (document.getElementById('qe-subcat-' + rowIdx)?.value || '').trim();
+  const amount = parseFloat(document.getElementById('qe-amount-' + rowIdx)?.value) || 0;
+  if (!date || !cat || !subcat || !amount) { showToast('Date, category, subcategory and amount are required'); return; }
+
+  const gstRate = parseFloat(document.getElementById('qe-gst-' + rowIdx)?.value) || 0;
+  const tdsRate = parseFloat(document.getElementById('qe-tds-' + rowIdx)?.value) || 0;
+  const currency = document.getElementById('qe-currency-' + rowIdx)?.value || 'INR';
+  const vendor = document.getElementById('qe-vendor-' + rowIdx)?.value || '';
+  const pan = document.getElementById('qe-pan-' + rowIdx)?.value || '';
+  const desc = document.getElementById('qe-desc-' + rowIdx)?.value || '';
+
+  const gstAmt = round2(amount * gstRate / 100);
+  const total = round2(amount + gstAmt);
+  const tdsAmt = round2(amount * tdsRate / 100);
+  const netPayable = round2(total - tdsAmt);
+  const newId = genId();
+
+  const dataRow = [newId, date, cat, subcat, vendor, pan, desc, currency, amount, gstRate, gstAmt, tdsRate, tdsAmt, total, netPayable, 'Unpaid', ''];
+
+  try {
+    await appendRow(SHEETS.expenses, dataRow);
+    await loadAllData();
+    // Update the tag row to point to the new expense
+    payTagRows[rowIdx].ref = newId;
+    payTagRows[rowIdx].refLabel = cat + ' ' + fmtDate(date);
+    showToast('Expense saved and selected');
+    renderTagRows();
+  } catch(e) {
+    showToast('Error saving expense: ' + e.message);
+  }
 }
 
 async function savePayment() {
@@ -2243,52 +3828,254 @@ async function savePayment() {
   if (!date || !desc || !amount) { showToast('Date, description and amount are required'); return; }
 
   const type = getVal('p-type');
-  const tags = type !== 'Loan' ? JSON.stringify(payTagRows.filter(r => r.ref && r.amount)) : '[]';
+  const validTags = type !== 'Loan' ? payTagRows.filter(r => {
+    if (r.type === 'Salary') return r.ref && parseFloat(r.salaryGross) > 0;
+    return r.ref && r.ref !== '__new__' && r.ref !== '__new_loan__' && r.amount;
+  }) : [];
 
-  const row = [
-    genId(), date, desc, type, amount,
-    getVal('p-ref'), type === 'Loan' ? getVal('p-person') : '',
-    tags, 'Active'
-  ];
+  // Check if we are tagging an existing payment or creating a new one
+  const modal = document.getElementById('paymentModal');
+  const existingPaymentId = modal.dataset.taggingId || '';
 
   try {
-    await appendRow(SHEETS.payments, row);
+    let paymentId = existingPaymentId;
 
-    // Update invoice/expense statuses based on tags
-    const tagsParsed = JSON.parse(tags);
-    for (const tag of tagsParsed) {
-      if (tag.type === 'Invoice') {
-        const inv = DATA.invoices.find(i => i.InvoiceNumber === tag.ref);
-        if (inv) await updateInvoicePaymentStatus(inv);
+    if (!existingPaymentId) {
+      // New payment — save payment row first
+      paymentId = genId();
+      const payRow = [
+        paymentId, date, desc, type, amount,
+        getVal('p-ref'),
+        type === 'Loan' ? getVal('p-person') : '',
+        'Active'
+      ];
+      await appendRow(SHEETS.payments, payRow);
+    }
+
+    // Save each tag as a separate transaction row
+    for (const tag of validTags) {
+      if (tag.type === 'Salary') {
+        const emp = DATA.employees.find(e => e.ID === tag.ref);
+        if (!emp) { showToast('Employee not found for salary tag'); continue; }
+        const gross = parseFloat(tag.salaryGross) || 0;
+        const deduction = parseFloat(tag.salaryDeduction) || 0;
+
+        // 1. Create an expense entry for gross salary under Personnel → Salary
+        const expId = genId();
+        const expRow = [
+          expId, date, 'Personnel', 'Salary',
+          emp.Name, '', 'Salary — ' + emp.Name,
+          'INR', gross, 0, 0, 0, 0, gross, gross,
+          gross, 1, 'Paid', ''
+        ];
+        await appendRow(SHEETS.expenses, expRow);
+
+        // 2. Create a transaction linking the payment to this expense
+        await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'Expense', expId, 'Salary: ' + emp.Name, gross]);
+
+        // 3. If there's a loan deduction, find the oldest pending loan for this employee and reduce it
+        if (deduction > 0) {
+          const empLoans = DATA.loans
+            .filter(l => l.EmployeeID === emp.ID && l.Status !== 'Settled')
+            .sort((a, b) => parseLocalDate(a.Date) - parseLocalDate(b.Date));
+
+          if (empLoans.length > 0) {
+            const oldestLoan = empLoans[0];
+            await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'Loan', oldestLoan.ID, 'Loan repayment: ' + emp.Name, deduction]);
+          } else {
+            showToast('Warning: No outstanding loan found for ' + emp.Name + '. Deduction not linked.');
+          }
+        }
+      } else {
+        const txRow = [
+          genId(), paymentId, date,
+          tag.type, tag.ref,
+          tag.refLabel || tag.ref,
+          parseFloat(tag.amount)
+        ];
+        await appendRow(SHEETS.transactions, txRow);
+      }
+    }
+
+    // Reload so getTotalPaid has fresh data
+    await loadAllData();
+
+    // Sync invoice/expense/loan statuses
+    for (const tag of validTags) {
+      try {
+        if (tag.type === 'Invoice') {
+          const inv = DATA.invoices.find(i => i.ID === tag.ref);
+          if (inv) await syncInvoiceStatus(inv);
+          else console.warn('Could not find invoice with ID', tag.ref);
+        } else if (tag.type === 'Expense') {
+          const exp = DATA.expenses.find(e => e.ID === tag.ref);
+          if (exp) await syncExpenseStatus(exp);
+          else console.warn('Could not find expense with ID', tag.ref);
+        } else if (tag.type === 'Loan') {
+          await syncLoanStatus(tag.ref);
+        } else if (tag.type === 'Salary') {
+          // Sync the expense that was just created + oldest loan if deduction applied
+          await loadAllData();
+          const emp = DATA.employees.find(e => e.ID === tag.ref);
+          if (emp && parseFloat(tag.salaryDeduction) > 0) {
+            const empLoans = DATA.loans
+              .filter(l => l.EmployeeID === emp.ID && l.Status !== 'Settled')
+              .sort((a, b) => parseLocalDate(a.Date) - parseLocalDate(b.Date));
+            if (empLoans.length > 0) await syncLoanStatus(empLoans[0].ID);
+          }
+        }
+      } catch (syncErr) {
+        console.error('Status sync failed for tag', tag, syncErr);
+        showToast('Warning: payment saved but status sync failed for ' + (tag.refLabel || tag.ref));
       }
     }
 
     await loadAllData();
     renderPayments();
+    modal.dataset.taggingId = '';
     closeModal('paymentModal');
-    showToast('Payment saved');
+    showToast(existingPaymentId ? 'Payment tagged successfully' : 'Payment saved');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+    console.error(e);
+  }
+}
+
+// Tag an existing untagged payment
+let taggingPaymentId = null;
+
+function openTagModal(paymentId) {
+  taggingPaymentId = paymentId;
+  const payment = DATA.payments.find(p => p.ID === paymentId);
+  if (!payment) return;
+
+  setVal('p-type', payment.Type);
+  setVal('p-date', payment.Date);
+  setVal('p-desc', payment.Description);
+  setVal('p-amount', payment.AmountINR);
+  setVal('p-ref', payment.Reference || '');
+  payTagRows = [];
+  onPaymentTypeChange();
+  renderTagRows();
+  document.querySelector('#paymentModal .modal-header h3').textContent = 'Tag Payment';
+  // Mark modal as tagging mode
+  document.getElementById('paymentModal').dataset.taggingId = paymentId;
+  openModal('paymentModal');
+}
+
+async function syncInvoiceStatus(inv) {
+  const totalPaid = getTotalPaid('Invoice', inv.ID);
+  // Use stored INRValue for comparison since all payments are recorded in INR.
+  // Falls back to NetReceivable for old INR-only invoices that predate INRValue.
+  const net = parseFloat(inv.INRValue || inv.NetReceivable || 0);
+  const newStatus = totalPaid >= net ? 'Paid' : totalPaid > 0 ? 'Partial' : 'Unpaid';
+  console.log('syncInvoiceStatus:', inv.InvoiceNumber, 'totalPaid=', totalPaid, 'net(INR)=', net, 'newStatus=', newStatus, 'oldStatus=', inv.Status);
+  if (newStatus !== inv.Status) {
+    const idx = DATA.invoices.findIndex(i => i.ID === inv.ID);
+    if (idx === -1) {
+      console.error('Could not find invoice index for', inv.ID);
+      return;
+    }
+    const headers = HEADERS.invoices;
+    const row = headers.map(h => {
+      const v = inv[h];
+      return (v === undefined || v === null) ? '' : v;
+    });
+    row[headers.indexOf('Status')] = newStatus;
+    await updateRow(SHEETS.invoices, idx, row);
+    console.log('Invoice status updated:', inv.InvoiceNumber, '->', newStatus);
+  }
+}
+
+async function syncExpenseStatus(exp) {
+  const totalPaid = getTotalPaid('Expense', exp.ID);
+  const net = parseFloat(exp.INRValue || exp.NetPayable || 0);
+  const newStatus = totalPaid >= net ? 'Paid' : totalPaid > 0 ? 'Partial' : 'Unpaid';
+  console.log('syncExpenseStatus:', exp.ID, 'totalPaid=', totalPaid, 'net(INR)=', net, 'newStatus=', newStatus, 'oldStatus=', exp.Status);
+  if (newStatus !== exp.Status) {
+    const idx = DATA.expenses.findIndex(e => e.ID === exp.ID);
+    if (idx === -1) {
+      console.error('Could not find expense index for', exp.ID);
+      return;
+    }
+    const headers = HEADERS.expenses;
+    const row = headers.map(h => {
+      const v = exp[h];
+      return (v === undefined || v === null) ? '' : v;
+    });
+    row[headers.indexOf('Status')] = newStatus;
+    await updateRow(SHEETS.expenses, idx, row);
+    console.log('Expense status updated:', exp.ID, '->', newStatus);
+  }
+}
+
+// Manual override — force an invoice or expense to Paid regardless of amount tagged (forex gap absorbed silently)
+async function markInvoiceFullyPaid(invoiceId) {
+  if (!confirm('Mark this invoice as fully paid? This overrides the automatic calculation — any shortfall due to currency rate differences will be ignored.')) return;
+  const inv = DATA.invoices.find(i => i.ID === invoiceId);
+  if (!inv) return;
+  const idx = DATA.invoices.findIndex(i => i.ID === invoiceId);
+  const headers = HEADERS.invoices;
+  const row = headers.map(h => {
+    const v = inv[h];
+    return (v === undefined || v === null) ? '' : v;
+  });
+  row[headers.indexOf('Status')] = 'Paid';
+  try {
+    await updateRow(SHEETS.invoices, idx, row);
+    await loadAllData();
+    renderInvoices();
+    showToast('Invoice marked as fully paid');
   } catch(e) {
     showToast('Error: ' + e.message);
   }
 }
 
-async function updateInvoicePaymentStatus(inv) {
-  const allPayments = DATA.payments;
-  const invPayments = allPayments.flatMap(p => {
-    try {
-      const tags = JSON.parse(p.Tags || '[]');
-      return tags.filter(t => t.type === 'Invoice' && t.ref === inv.InvoiceNumber).map(t => parseFloat(t.amount) || 0);
-    } catch { return []; }
+async function markExpenseFullyPaid(expenseId) {
+  if (!confirm('Mark this expense as fully paid? This overrides the automatic calculation — any shortfall due to currency rate differences will be ignored.')) return;
+  const exp = DATA.expenses.find(e => e.ID === expenseId);
+  if (!exp) return;
+  const idx = DATA.expenses.findIndex(e => e.ID === expenseId);
+  const headers = HEADERS.expenses;
+  const row = headers.map(h => {
+    const v = exp[h];
+    return (v === undefined || v === null) ? '' : v;
   });
-  const totalPaid = invPayments.reduce((s, a) => s + a, 0);
-  const net = parseFloat(inv.NetReceivable || 0);
-  const newStatus = totalPaid >= net ? 'Paid' : totalPaid > 0 ? 'Partial' : 'Unpaid';
+  row[headers.indexOf('Status')] = 'Paid';
+  try {
+    await updateRow(SHEETS.expenses, idx, row);
+    await loadAllData();
+    renderExpenses();
+    showToast('Expense marked as fully paid');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+}
 
-  if (newStatus !== inv.Status) {
-    const idx = DATA.invoices.findIndex(i => i.ID === inv.ID);
-    const row = Object.values(inv);
-    row[20] = newStatus; // Status column
-    await updateRow(SHEETS.invoices, idx, row);
+async function deletePaymentFull(paymentId, paymentIdx) {
+  if (!confirm('Delete this payment and all its transaction links? This cannot be undone.')) return;
+  try {
+    // Delete all transaction rows for this payment (delete from bottom up)
+    const txnsToDelete = DATA.transactions
+      .map((t, i) => ({ t, i }))
+      .filter(({ t }) => t.PaymentID === paymentId)
+      .sort((a, b) => b.i - a.i); // reverse order to keep indices valid
+
+    for (const { i } of txnsToDelete) {
+      await deleteRow(SHEETS.transactions, i);
+      await loadAllData(); // reload after each delete to keep indices fresh
+    }
+
+    // Delete the payment row
+    const freshIdx = DATA.payments.findIndex(p => p.ID === paymentId);
+    if (freshIdx >= 0) await deleteRow(SHEETS.payments, freshIdx);
+
+    await loadAllData();
+    renderPayments();
+    showToast('Payment deleted');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+    console.error(e);
   }
 }
 
@@ -2364,6 +4151,18 @@ function initPLFilters() {
   document.getElementById('plToMonth').value = String(now.getMonth() + 1);
 }
 
+function invoiceBaseInINR(i) {
+  if (i.Currency === 'INR' || !i.INRValue) return parseFloat(i.BaseAmount || 0);
+  const rate = parseFloat(i.RateUsed) || (parseFloat(i.INRValue) / parseFloat(i.NetReceivable || 1));
+  return round2(parseFloat(i.BaseAmount || 0) * rate);
+}
+
+function expenseBaseInINR(e) {
+  if (e.Currency === 'INR' || !e.INRValue) return parseFloat(e.BaseAmount || 0);
+  const rate = parseFloat(e.RateUsed) || (parseFloat(e.INRValue) / parseFloat(e.NetPayable || 1));
+  return round2(parseFloat(e.BaseAmount || 0) * rate);
+}
+
 function renderPL() {
   const fromM = parseInt(document.getElementById('plFromMonth').value);
   const fromY = parseInt(document.getElementById('plFromYear').value);
@@ -2375,20 +4174,22 @@ function renderPL() {
   const toDate = new Date(toY, toM, 0);
 
   const invoices = DATA.invoices.filter(i => {
-    const d = new Date(i.Date);
+    const d = parseLocalDate(i.Date);
     return d >= fromDate && d <= toDate;
   });
 
   const expenses = DATA.expenses.filter(e => {
-    const d = new Date(e.Date);
+    const d = parseLocalDate(e.Date);
     return d >= fromDate && d <= toDate;
   });
 
-  const revenue = invoices.reduce((s, i) => s + parseFloat(i.BaseAmount || 0), 0);
-  const futureRev = inclFuture ? DATA.receivables.reduce((s, r) => s + parseFloat(r.Amount || 0), 0) : 0;
+  // Convert each invoice's base amount to INR using the same rate that was locked at entry time
+  // (INRValue / NetReceivable gives the effective rate, since NetReceivable already includes tax/TDS proportionally)
+  const revenue = invoices.reduce((s, i) => s + invoiceBaseInINR(i), 0);
+  const futureRev = inclFuture ? DATA.receivables.reduce((s, r) => s + (parseFloat(r.Amount || 0) * getRate(r.Currency)), 0) : 0;
   const totalRev = revenue + futureRev;
 
-  const totalExp = expenses.reduce((s, e) => s + parseFloat(e.BaseAmount || 0), 0);
+  const totalExp = expenses.reduce((s, e) => s + expenseBaseInINR(e), 0);
   const netPL = totalRev - totalExp;
 
   document.getElementById('plMetrics').innerHTML = `
@@ -2412,37 +4213,52 @@ function renderPL() {
     </div>
   `;
 
-  // Revenue breakdown
+  // Revenue breakdown — clickable by client name
   const revByClient = {};
   invoices.forEach(i => {
-    revByClient[i.ClientName] = (revByClient[i.ClientName] || 0) + parseFloat(i.BaseAmount || 0);
+    revByClient[i.ClientName] = (revByClient[i.ClientName] || 0) + invoiceBaseInINR(i);
   });
+  // Store invoices grouped by client for drilldown
+  const invByClient = {};
+  invoices.forEach(i => {
+    if (!invByClient[i.ClientName]) invByClient[i.ClientName] = [];
+    invByClient[i.ClientName].push(i);
+  });
+  window._plInvByClient = invByClient;
+
   document.getElementById('plRevenueItems').innerHTML = Object.entries(revByClient)
     .sort((a,b) => b[1]-a[1])
-    .map(([name, amt]) => `
-      <div class="breakdown-row">
-        <span class="breakdown-label">${name}</span>
-        <span>₹${fmtNum(amt)}</span>
-      </div>
-    `).join('') + (inclFuture && futureRev ? `<div class="breakdown-row" style="color:var(--warning);">
-      <span>Future receivables</span><span>₹${fmtNum(futureRev)}</span>
-    </div>` : '') + `
-    <div class="breakdown-row total"><span>Total</span><span>₹${fmtNum(totalRev)}</span></div>`;
+    .map(([name, amt]) =>
+      '<div class="breakdown-row" style="cursor:pointer;" onclick="showRevenueDrilldown(\'' + name.replace(/'/g,"\\'") + '\', window._plInvByClient[\'' + name.replace(/'/g,"\\'") + '\'])">' +
+        '<span class="breakdown-label" style="text-decoration:underline;text-decoration-style:dotted;">' + name + '</span>' +
+        '<span>₹' + fmtNum(amt) + '</span>' +
+      '</div>'
+    ).join('') +
+    (inclFuture && futureRev ? '<div class="breakdown-row" style="color:var(--warning);"><span>Future receivables</span><span>₹' + fmtNum(futureRev) + '</span></div>' : '') +
+    '<div class="breakdown-row total"><span>Total</span><span>₹' + fmtNum(totalRev) + '</span></div>';
 
-  // Expense breakdown
+  // Expense breakdown — clickable by category
   const expByCat = {};
   expenses.forEach(e => {
-    expByCat[e.Category] = (expByCat[e.Category] || 0) + parseFloat(e.BaseAmount || 0);
+    expByCat[e.Category] = (expByCat[e.Category] || 0) + expenseBaseInINR(e);
   });
+  // Store expenses grouped by category for drilldown
+  const expByCatFull = {};
+  expenses.forEach(e => {
+    if (!expByCatFull[e.Category]) expByCatFull[e.Category] = [];
+    expByCatFull[e.Category].push(e);
+  });
+  window._plExpByCat = expByCatFull;
+
   document.getElementById('plExpenseItems').innerHTML = Object.entries(expByCat)
     .sort((a,b) => b[1]-a[1])
-    .map(([cat, amt]) => `
-      <div class="breakdown-row">
-        <span class="breakdown-label">${cat}</span>
-        <span>₹${fmtNum(amt)}</span>
-      </div>
-    `).join('') + `
-    <div class="breakdown-row total"><span>Total</span><span>₹${fmtNum(totalExp)}</span></div>`;
+    .map(([cat, amt]) =>
+      '<div class="breakdown-row" style="cursor:pointer;" onclick="showExpenseDrilldown(\'' + cat.replace(/'/g,"\\'") + '\', window._plExpByCat[\'' + cat.replace(/'/g,"\\'") + '\'])">' +
+        '<span class="breakdown-label" style="text-decoration:underline;text-decoration-style:dotted;">' + cat + '</span>' +
+        '<span>₹' + fmtNum(amt) + '</span>' +
+      '</div>'
+    ).join('') +
+    '<div class="breakdown-row total"><span>Total</span><span>₹' + fmtNum(totalExp) + '</span></div>';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2466,12 +4282,12 @@ async function generateReport() {
   const monthEnd = new Date(year, month, 0);
 
   const monthInvoices = DATA.invoices.filter(i => {
-    const d = new Date(i.Date);
+    const d = parseLocalDate(i.Date);
     return d >= monthStart && d <= monthEnd;
   });
 
   const monthExpenses = DATA.expenses.filter(e => {
-    const d = new Date(e.Date);
+    const d = parseLocalDate(e.Date);
     return d >= monthStart && d <= monthEnd;
   });
 
@@ -2508,15 +4324,15 @@ async function generateReport() {
 
   // Sheet 2: ITC (GST on expenses)
   const itcData = [
-    ['Date', 'Category', 'Vendor', 'PAN', 'Currency', 'Base Amount', 'GST Rate', 'GST Amount (ITC)', 'Total Invoice Value'],
+    ['Date', 'Category', 'Subcategory', 'Vendor', 'PAN', 'Currency', 'Base Amount', 'GST Rate', 'GST Amount (ITC)', 'Total Invoice Value'],
     ...monthExpenses.filter(e => parseFloat(e.GSTRate||0) > 0).map(e => [
-      e.Date, e.Category, e.Vendor||'', e.PAN||'', e.Currency,
+      e.Date, e.Category, e.Subcategory||'', e.Vendor||'', e.PAN||'', e.Currency,
       parseFloat(e.BaseAmount||0), parseFloat(e.GSTRate||0)+'%',
       parseFloat(e.GSTAmount||0), parseFloat(e.TotalPayable||0)
     ])
   ];
   const itcTotal = monthExpenses.filter(e => parseFloat(e.GSTRate||0) > 0).reduce((s,e) => s + parseFloat(e.GSTAmount||0), 0);
-  if (itcData.length > 1) itcData.push(['TOTAL ITC', '', '', '', '', '', '', itcTotal, '']);
+  if (itcData.length > 1) itcData.push(['TOTAL ITC', '', '', '', '', '', '', '', itcTotal, '']);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(itcData), 'GST Input Tax Credit');
 
   // Sheet 3: TDS by clients
@@ -2534,15 +4350,15 @@ async function generateReport() {
 
   // Sheet 4: TDS by you
   const tdsYou = [
-    ['Date', 'Vendor', 'PAN', 'Category', 'Base Amount', 'TDS Rate', 'TDS Amount (Govt Liability)', 'Net Paid to Vendor'],
+    ['Date', 'Vendor', 'PAN', 'Category', 'Subcategory', 'Base Amount', 'TDS Rate', 'TDS Amount (Govt Liability)', 'Net Paid to Vendor'],
     ...monthExpenses.filter(e => parseFloat(e.TDSRate||0) > 0).map(e => [
-      e.Date, e.Vendor||'', e.PAN||'', e.Category,
+      e.Date, e.Vendor||'', e.PAN||'', e.Category, e.Subcategory||'',
       parseFloat(e.BaseAmount||0), parseFloat(e.TDSRate||0)+'%',
       parseFloat(e.TDSAmount||0), parseFloat(e.NetPayable||0)
     ])
   ];
   const tdsYouTotal = monthExpenses.filter(e => parseFloat(e.TDSRate||0) > 0).reduce((s,e)=>s+parseFloat(e.TDSAmount||0),0);
-  if (tdsYou.length > 1) tdsYou.push(['TOTAL TDS (Your liability)', '', '', '', '', '', tdsYouTotal, '']);
+  if (tdsYou.length > 1) tdsYou.push(['TOTAL TDS (Your liability)', '', '', '', '', '', '', tdsYouTotal, '']);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tdsYou), 'TDS You Deduct');
 
   // Sheet 5: Invoice Summary
@@ -2592,9 +4408,21 @@ function fmtINR(n) {
   return '₹' + fmtNum(n);
 }
 
+// Parses a YYYY-MM-DD string as a local date (avoids UTC interpretation that
+// shifts dates by the local timezone offset when used in comparisons or display).
+function parseLocalDate(d) {
+  if (!d) return null;
+  const str = String(d).trim();
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+  }
+  return new Date(str);
+}
+
 function fmtDate(d) {
   if (!d) return '—';
-  const dt = new Date(d);
+  const dt = parseLocalDate(d);
   return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
@@ -2638,7 +4466,7 @@ function setBtnLoading(id, loading) {
   const btn = document.getElementById(id);
   if (!btn) return;
   btn.disabled = loading;
-  btn.innerHTML = loading ? '<span class="loading"></span> Saving...' : (id.includes('Client') ? 'Save Client' : id.includes('Invoice') ? 'Save Invoice' : 'Save Expense');
+  btn.innerHTML = loading ? '<span class="loading"></span> Saving...' : (id.includes('Client') ? 'Save Client' : id.includes('Invoice') ? 'Save Invoice' : id.includes('Loan') ? 'Save Loan' : id.includes('Currency') ? 'Save Rates' : id.includes('Employee') ? 'Save Employee' : 'Save Expense');
 }
 
 let toastTimer;
@@ -2677,8 +4505,555 @@ window.addEventListener('load', () => {
   });
 });
 
-// gapi stub to avoid null errors before auth
-const gapi = { client: { getToken: () => ({ access_token: '' }) } };
+// ═══════════════════════════════════════════════════════
+// TRANSACTIONS VIEW
+// ═══════════════════════════════════════════════════════
+function renderTransactions() {
+  const search = (document.getElementById('txnSearch')?.value || '').toLowerCase();
+  const typeFilter = document.getElementById('txnTypeFilter')?.value || '';
+
+  let rows = DATA.transactions.filter(t => {
+    const payment = DATA.payments.find(p => p.ID === t.PaymentID);
+    const desc = (payment?.Description || '').toLowerCase();
+    const label = (t.RefLabel || '').toLowerCase();
+    const ms = !search || desc.includes(search) || label.includes(search);
+    const mt = !typeFilter || t.RefType === typeFilter;
+    return ms && mt;
+  }).sort((a, b) => parseLocalDate(b.PaymentDate) - parseLocalDate(a.PaymentDate));
+
+  const tbody = document.getElementById('transactionsTable');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="icon">🔁</div><p>No transactions yet. Tag payments to invoices or expenses to see them here.</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(t => {
+    const payment = DATA.payments.find(p => p.ID === t.PaymentID);
+    const typeBadge = t.RefType === 'Invoice' ? 'badge-success' : t.RefType === 'Loan' ? 'badge-neutral' : 'badge-warning';
+    return '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(t.PaymentDate) + '</td>' +
+      '<td>' + (payment?.Description || '—') + '</td>' +
+      '<td><span class="badge ' + typeBadge + '">' + t.RefType + '</span></td>' +
+      '<td><span style="font-weight:500;">' + (t.RefLabel || t.RefID) + '</span></td>' +
+      '<td class="text-right"><strong>₹' + fmtNum(t.AmountINR) + '</strong></td>' +
+      '</tr>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// LOANS
+// ═══════════════════════════════════════════════════════
+function getTotalRepaid(loanId) {
+  return DATA.transactions
+    .filter(t => t.RefType === 'Loan' && t.RefID === loanId)
+    .reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
+}
+
+async function syncLoanStatus(loanId) {
+  const loan = DATA.loans.find(l => l.ID === loanId);
+  if (!loan) return;
+  const totalRepaid = getTotalRepaid(loanId);
+  const amount = parseFloat(loan.AmountINR || 0);
+  const newStatus = totalRepaid >= amount ? 'Settled' : totalRepaid > 0 ? 'Partial' : 'Pending';
+  if (newStatus !== loan.Status) {
+    const idx = DATA.loans.findIndex(l => l.ID === loanId);
+    const row = HEADERS.loans.map(h => loan[h] || '');
+    row[HEADERS.loans.indexOf('Status')] = newStatus;
+    await updateRow(SHEETS.loans, idx, row);
+  }
+}
+
+function renderLoans() {
+  const search = (document.getElementById('loanSearch')?.value || '').toLowerCase();
+  const statusFilter = document.getElementById('loanStatusFilter')?.value || '';
+  const typeFilter = document.getElementById('loanTypeFilter')?.value || '';
+
+  let rows = DATA.loans.filter(l => {
+    const ms = !search || (l.PersonName || '').toLowerCase().includes(search) || (l.Description || '').toLowerCase().includes(search);
+    const mst = !statusFilter || l.Status === statusFilter;
+    const mt = !typeFilter || l.Type === typeFilter;
+    return ms && mst && mt;
+  }).sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
+
+  const tbody = document.getElementById('loansTable');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="icon">💰</div><p>No loans yet.</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(l => {
+    const amount = parseFloat(l.AmountINR || 0);
+    const repaid = getTotalRepaid(l.ID);
+    const outstanding = amount - repaid;
+    const statusMap = { Settled: 'badge-success', Partial: 'badge-warning', Pending: 'badge-danger' };
+    const emp = l.EmployeeID ? DATA.employees.find(e => e.ID === l.EmployeeID) : null;
+    return '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(l.Date) + '</td>' +
+      '<td><strong style="font-weight:500;">' + l.PersonName + '</strong>' +
+        (emp ? '<br><span class="badge badge-blue" style="font-size:10px;">👤 ' + emp.Name + '</span>' : '') +
+      '</td>' +
+      '<td><span class="badge ' + (l.Type === 'Taken' ? 'badge-success' : 'badge-warning') + '">' + l.Type + '</span></td>' +
+      '<td class="text-right">₹' + fmtNum(amount) + '</td>' +
+      '<td class="text-right text-success">₹' + fmtNum(repaid) + '</td>' +
+      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '"><strong>₹' + fmtNum(outstanding) + '</strong></td>' +
+      '<td style="color:var(--text-muted);">' + (l.Description || '—') + '</td>' +
+      '<td><span class="badge ' + (statusMap[l.Status] || 'badge-neutral') + '">' + (l.Status || 'Pending') + '</span></td>' +
+      '<td><div style="display:flex;gap:4px;">' +
+        '<button class="btn btn-sm" onclick="openLoanModal(' + DATA.loans.indexOf(l) + ')">Edit</button>' +
+        '<button class="btn btn-sm btn-danger" data-id="' + l.ID + '" data-idx="' + DATA.loans.indexOf(l) + '" onclick="deleteRecord(\'loans\',this.dataset.id,parseInt(this.dataset.idx))">×</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function openLoanModal(idx) {
+  editingId = idx !== undefined ? DATA.loans[idx].ID : null;
+  document.getElementById('loanModalTitle').textContent = editingId ? 'Edit Loan' : 'Add Loan';
+  const l = editingId ? DATA.loans[idx] : {};
+
+  // Populate employee dropdown
+  const empSel = document.getElementById('l-employee');
+  empSel.innerHTML = '<option value="">— Not an employee loan —</option>' +
+    DATA.employees.filter(e => e.Status === 'Active').map(e =>
+      '<option value="' + e.ID + '"' + (l.EmployeeID === e.ID ? ' selected' : '') + '>' + e.Name + '</option>'
+    ).join('');
+
+  setVal('l-date', l.Date || today());
+  setVal('l-type', l.Type || 'Given');
+  setVal('l-person', l.PersonName || '');
+  setVal('l-amount', l.AmountINR || '');
+  setVal('l-desc', l.Description || '');
+  setVal('l-notes', l.Notes || '');
+  openModal('loanModal');
+}
+
+function onLoanEmployeeChange() {
+  const empId = getVal('l-employee');
+  const emp = DATA.employees.find(e => e.ID === empId);
+  if (emp) setVal('l-person', emp.Name);
+}
+
+async function saveLoan() {
+  const date = getVal('l-date');
+  const person = getVal('l-person').trim();
+  const amount = parseFloat(getVal('l-amount')) || 0;
+  if (!date || !person || !amount) { showToast('Date, person name and amount are required'); return; }
+
+  const row = [
+    editingId || genId(), date, person,
+    getVal('l-employee'),
+    getVal('l-type'), amount,
+    getVal('l-desc'), 'Pending',
+    getVal('l-notes')
+  ];
+
+  setBtnLoading('saveLoanBtn', true);
+  try {
+    if (editingId) {
+      const idx = DATA.loans.findIndex(l => l.ID === editingId);
+      await updateRow(SHEETS.loans, idx, row);
+    } else {
+      await appendRow(SHEETS.loans, row);
+    }
+    await loadAllData();
+    renderLoans();
+    closeModal('loanModal');
+    showToast(editingId ? 'Loan updated' : 'Loan saved');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  setBtnLoading('saveLoanBtn', false);
+}
+
+// ═══════════════════════════════════════════════════════
+// EMPLOYEES
+// ═══════════════════════════════════════════════════════
+function getEmployeeOutstandingLoan(empId) {
+  const loans = DATA.loans.filter(l => l.EmployeeID === empId && l.Status !== 'Settled');
+  return loans.reduce((s, l) => {
+    const paid = getTotalRepaid(l.ID);
+    return s + Math.max(0, parseFloat(l.AmountINR || 0) - paid);
+  }, 0);
+}
+
+function renderEmployees() {
+  const tbody = document.getElementById('employeesTable');
+  const rows = DATA.employees.sort((a, b) => a.Name.localeCompare(b.Name));
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">👤</div><p>No employees yet. Add your first employee.</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(e => {
+    const outstanding = getEmployeeOutstandingLoan(e.ID);
+    return '<tr>' +
+      '<td><strong style="font-weight:500;">' + e.Name + '</strong></td>' +
+      '<td class="text-right">₹' + fmtNum(e.MonthlySalary) + '</td>' +
+      '<td class="text-right">₹' + fmtNum(e.AnnualBonus || 0) + '</td>' +
+      '<td style="color:var(--text-muted);">' + (e.JoiningDate ? fmtDate(e.JoiningDate) : '—') + '</td>' +
+      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '">' + (outstanding > 0 ? '₹' + fmtNum(outstanding) : '—') + '</td>' +
+      '<td><span class="badge ' + (e.Status === 'Active' ? 'badge-success' : 'badge-neutral') + '">' + (e.Status || 'Active') + '</span></td>' +
+      '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
+        '<button class="btn btn-sm" onclick="openEmployeeModal(' + DATA.employees.indexOf(e) + ')">Edit</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteRecord(\'employees\',\'' + e.ID + '\',' + DATA.employees.indexOf(e) + ')">×</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function openEmployeeModal(idx) {
+  editingId = idx !== undefined ? DATA.employees[idx].ID : null;
+  document.getElementById('employeeModalTitle').textContent = editingId ? 'Edit Employee' : 'Add Employee';
+  const e = editingId ? DATA.employees[idx] : {};
+  setVal('emp-name', e.Name || '');
+  setVal('emp-salary', e.MonthlySalary || '');
+  setVal('emp-bonus', e.AnnualBonus || '');
+  setVal('emp-joining', e.JoiningDate || '');
+  setVal('emp-status', e.Status || 'Active');
+  setVal('emp-notes', e.Notes || '');
+  openModal('employeeModal');
+}
+
+async function saveEmployee() {
+  const name = getVal('emp-name').trim();
+  const salary = parseFloat(getVal('emp-salary')) || 0;
+  if (!name || !salary) { showToast('Name and monthly salary are required'); return; }
+
+  const row = [
+    editingId || genId(),
+    name, salary,
+    parseFloat(getVal('emp-bonus')) || 0,
+    getVal('emp-joining'),
+    getVal('emp-status') || 'Active',
+    getVal('emp-notes')
+  ];
+
+  setBtnLoading('saveEmployeeBtn', true);
+  try {
+    if (editingId) {
+      const idx = DATA.employees.findIndex(e => e.ID === editingId);
+      await updateRow(SHEETS.employees, idx, row);
+    } else {
+      await appendRow(SHEETS.employees, row);
+    }
+    await loadAllData();
+    renderEmployees();
+    closeModal('employeeModal');
+    showToast(editingId ? 'Employee updated' : 'Employee saved');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  setBtnLoading('saveEmployeeBtn', false);
+}
+// CURRENCY RATES
+// ═══════════════════════════════════════════════════════
+let currencyRateRows = [];
+
+function renderCurrencyRates() {
+  currencyRateRows = DATA.currencyRates.map(r => ({ Currency: r.Currency, RateToINR: r.RateToINR }));
+  drawCurrencyRateRows();
+}
+
+function drawCurrencyRateRows() {
+  const tbody = document.getElementById('currencyRatesTable');
+  if (!currencyRateRows.length) {
+    tbody.innerHTML = '<tr><td colspan="3"><div class="empty-state"><p>No currencies configured yet.</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = currencyRateRows.map((r, i) => {
+    const isINR = r.Currency === 'INR';
+    return '<tr>' +
+      '<td>' + (isINR
+        ? '<strong>INR</strong> <span class="badge badge-neutral" style="font-size:10px;">base</span>'
+        : '<input type="text" value="' + r.Currency + '" style="width:90px;" oninput="currencyRateRows[' + i + '].Currency=this.value.toUpperCase()">') +
+      '</td>' +
+      '<td>' + (isINR
+        ? '1.00'
+        : '<input type="number" step="0.01" value="' + r.RateToINR + '" style="width:120px;" oninput="currencyRateRows[' + i + '].RateToINR=this.value">') +
+      '</td>' +
+      '<td>' + (isINR ? '' : '<button class="btn btn-sm btn-danger" onclick="currencyRateRows.splice(' + i + ',1);drawCurrencyRateRows();">×</button>') +
+      '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function addCurrencyRow() {
+  currencyRateRows.push({ Currency: '', RateToINR: '' });
+  drawCurrencyRateRows();
+}
+
+async function saveCurrencyRates() {
+  const valid = currencyRateRows.filter(r => r.Currency.trim() && parseFloat(r.RateToINR) > 0);
+  if (!valid.length) { showToast('Add at least one valid currency and rate'); return; }
+
+  setBtnLoading('saveCurrencyBtn', true);
+  try {
+    // Clear sheet and rewrite — simplest way to keep it in sync with edits/deletes
+    const info = await sheetsRequest('GET', '');
+    const sheet = info.sheets.find(s => s.properties.title === SHEETS.currencyRates);
+    if (sheet) {
+      // Clear all data rows (keep header)
+      await sheetsRequest('POST', `/values/${encodeURIComponent(SHEETS.currencyRates)}:clear`, {});
+      await writeHeaders(SHEETS.currencyRates, HEADERS.currencyRates);
+    }
+    for (const row of valid) {
+      await appendRow(SHEETS.currencyRates, [row.Currency.trim().toUpperCase(), parseFloat(row.RateToINR)]);
+    }
+    await loadAllData();
+    renderCurrencyRates();
+    showToast('Currency rates saved');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+    console.error(e);
+  }
+  setBtnLoading('saveCurrencyBtn', false);
+}
+
+// ═══════════════════════════════════════════════════════
+// OPERATIONS DASHBOARD
+// ═══════════════════════════════════════════════════════
+let currentOpsTab = 'tagging';
+
+function renderOperations() {
+  // KPIs
+  const untagged = DATA.payments.filter(p => p.Type !== 'Loan' && getTxnsForPayment(p.ID).length === 0);
+  const unpaidInv = DATA.invoices.filter(i => i.Status === 'Unpaid' || i.Status === 'Partial');
+  const unpaidExp = DATA.expenses.filter(e => e.Status === 'Unpaid' || e.Status === 'Partial');
+
+  const pendingInvAmt = unpaidInv.reduce((s, i) => {
+    // Use INRValue if available, else NetReceivable (for INR invoices only to avoid forex mismatch)
+    const inrVal = parseFloat(i.INRValue || 0);
+    const net = parseFloat(i.NetReceivable || 0);
+    const base = inrVal > 0 ? inrVal : (i.Currency === 'INR' ? net : 0);
+    const paid = getTotalPaid('Invoice', i.ID);
+    return s + Math.max(0, base - paid);
+  }, 0);
+  const pendingExpAmt = unpaidExp.reduce((s, e) => {
+    const inrVal = parseFloat(e.INRValue || 0);
+    const net = parseFloat(e.NetPayable || 0);
+    const base = inrVal > 0 ? inrVal : (e.Currency === 'INR' ? net : 0);
+    const paid = getTotalPaid('Expense', e.ID);
+    return s + Math.max(0, base - paid);
+  }, 0);
+
+  const kpiUntagged = document.getElementById('kpi-untagged');
+  const kpiInvUnpaid = document.getElementById('kpi-inv-unpaid');
+  const kpiInvAmt = document.getElementById('kpi-inv-amount');
+  const kpiExpUnpaid = document.getElementById('kpi-exp-unpaid');
+  const kpiExpAmt = document.getElementById('kpi-exp-amount');
+
+  if (kpiUntagged) kpiUntagged.textContent = untagged.length;
+  if (kpiInvUnpaid) kpiInvUnpaid.textContent = unpaidInv.length;
+  if (kpiInvAmt) kpiInvAmt.textContent = '₹' + fmtNum(pendingInvAmt) + ' outstanding';
+  if (kpiExpUnpaid) kpiExpUnpaid.textContent = unpaidExp.length;
+  if (kpiExpAmt) kpiExpAmt.textContent = '₹' + fmtNum(pendingExpAmt) + ' outstanding';
+
+  renderOpsTable(currentOpsTab);
+}
+
+function switchOpsTab(tab, el) {
+  currentOpsTab = tab;
+  document.querySelectorAll('.ops-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderOpsTable(tab);
+}
+
+function renderOpsTable(tab) {
+  const thead = document.getElementById('ops-thead');
+  const tbody = document.getElementById('ops-tbody');
+  if (!thead || !tbody) return;
+
+  if (tab === 'tagging') {
+    const rows = DATA.payments.filter(p => p.Type !== 'Loan' && getTxnsForPayment(p.ID).length === 0)
+      .sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
+    thead.innerHTML = '<tr><th>Date</th><th>Description</th><th>Type</th><th>Amount (INR)</th><th>Action</th></tr>';
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="icon">✓</div><p>All payments are tagged!</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(p =>
+      '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(p.Date) + '</td>' +
+      '<td>' + p.Description + '</td>' +
+      '<td><span class="badge ' + (p.Type === 'Inward' ? 'badge-success' : 'badge-danger') + '">' + p.Type + '</span></td>' +
+      '<td class="text-right"><strong>₹' + fmtNum(p.AmountINR) + '</strong></td>' +
+      '<td><button class="btn btn-sm" onclick="navigate(\'payments\')">Go to Payments →</button></td>' +
+      '</tr>'
+    ).join('');
+
+  } else if (tab === 'invoices') {
+    const rows = DATA.invoices.filter(i => i.Status === 'Unpaid' || i.Status === 'Partial')
+      .sort((a, b) => parseLocalDate(a.Date) - parseLocalDate(b.Date));
+    thead.innerHTML = '<tr><th>Invoice #</th><th>Date</th><th>Client</th><th>Currency</th><th>Net Receivable</th><th>Paid</th><th>Outstanding</th><th>Status</th></tr>';
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon">✓</div><p>No unpaid invoices!</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(i => {
+      const inrVal = parseFloat(i.INRValue || i.NetReceivable || 0);
+      const paid = getTotalPaid('Invoice', i.ID);
+      const outstanding = Math.max(0, inrVal - paid);
+      return '<tr>' +
+        '<td><strong style="font-weight:500;">' + i.InvoiceNumber + '</strong></td>' +
+        '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(i.Date) + '</td>' +
+        '<td>' + i.ClientName + '</td>' +
+        '<td><span class="badge badge-neutral">' + i.Currency + '</span></td>' +
+        '<td class="text-right">' + fmtNum(i.NetReceivable) + '</td>' +
+        '<td class="text-right text-success">₹' + fmtNum(paid) + '</td>' +
+        '<td class="text-right text-danger"><strong>₹' + fmtNum(outstanding) + '</strong></td>' +
+        '<td>' + statusBadge(i.Status) + '</td>' +
+        '</tr>';
+    }).join('');
+
+  } else if (tab === 'expenses') {
+    const rows = DATA.expenses.filter(e => e.Status === 'Unpaid' || e.Status === 'Partial')
+      .sort((a, b) => parseLocalDate(a.Date) - parseLocalDate(b.Date));
+    thead.innerHTML = '<tr><th>Date</th><th>Category</th><th>Subcategory</th><th>Vendor</th><th>Net Payable</th><th>Paid</th><th>Outstanding</th><th>Status</th></tr>';
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon">✓</div><p>No unpaid expenses!</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(e => {
+      const inrVal = parseFloat(e.INRValue || e.NetPayable || 0);
+      const paid = getTotalPaid('Expense', e.ID);
+      const outstanding = Math.max(0, inrVal - paid);
+      return '<tr>' +
+        '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(e.Date) + '</td>' +
+        '<td>' + e.Category + '</td>' +
+        '<td style="color:var(--text-muted);">' + (e.Subcategory || '—') + '</td>' +
+        '<td>' + (e.Vendor || '—') + '</td>' +
+        '<td class="text-right">₹' + fmtNum(e.NetPayable) + '</td>' +
+        '<td class="text-right text-success">₹' + fmtNum(paid) + '</td>' +
+        '<td class="text-right text-danger"><strong>₹' + fmtNum(outstanding) + '</strong></td>' +
+        '<td>' + statusBadge(e.Status) + '</td>' +
+        '</tr>';
+    }).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// P&L DRILLDOWNS
+// ═══════════════════════════════════════════════════════
+function showRevenueDrilldown(clientName, invoices) {
+  const overlay = document.createElement('div');
+  overlay.className = 'drilldown-overlay';
+
+  const total = invoices.reduce((s, i) => s + invoiceBaseInINR(i), 0);
+  const rows = invoices.map(i => {
+    const inrVal = parseFloat(i.INRValue || i.NetReceivable || 0);
+    const paid = getTotalPaid('Invoice', i.ID);
+    const outstanding = Math.max(0, inrVal - paid);
+    return '<tr>' +
+      '<td><strong style="font-weight:500;font-size:12px;">' + i.InvoiceNumber + '</strong></td>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(i.Date) + '</td>' +
+      '<td><span class="badge badge-neutral" style="font-size:10px;">' + i.Currency + '</span></td>' +
+      '<td class="text-right">₹' + fmtNum(invoiceBaseInINR(i)) + '</td>' +
+      '<td class="text-right text-success">₹' + fmtNum(paid) + '</td>' +
+      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '">₹' + fmtNum(outstanding) + '</td>' +
+      '<td>' + statusBadge(i.Status) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  overlay.innerHTML =
+    '<div class="drilldown-modal" style="max-width:750px;">' +
+      '<div class="drilldown-header">' +
+        '<div>' +
+          '<h3 style="font-size:14px;font-weight:500;">' + clientName + '</h3>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + invoices.length + ' invoices — Total ₹' + fmtNum(total) + '</div>' +
+        '</div>' +
+        '<button class="btn btn-sm" onclick="this.closest(\'.drilldown-overlay\').remove()">✕</button>' +
+      '</div>' +
+      '<div style="overflow-y:auto;padding:16px;">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;">' +
+          '<thead><tr><th>Invoice #</th><th>Date</th><th>Currency</th><th>Base (INR)</th><th>Paid</th><th>Outstanding</th><th>Status</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function showExpenseDrilldown(categoryName, expenses) {
+  // Group by subcategory
+  const bySubcat = {};
+  expenses.forEach(e => {
+    const key = e.Subcategory || 'Other';
+    if (!bySubcat[key]) bySubcat[key] = [];
+    bySubcat[key].push(e);
+  });
+
+  const subcats = Object.keys(bySubcat).sort((a, b) => {
+    return bySubcat[b].reduce((s, e) => s + expenseBaseInINR(e), 0) -
+           bySubcat[a].reduce((s, e) => s + expenseBaseInINR(e), 0);
+  });
+
+  let selectedSubcat = subcats[0];
+
+  function buildOverlay() {
+    const leftItems = subcats.map(s => {
+      const total = bySubcat[s].reduce((sum, e) => sum + expenseBaseInINR(e), 0);
+      const escapedS = s.replace(/'/g, "\'");
+      return '<div class="drilldown-item' + (s === selectedSubcat ? ' active' : '') + '" onclick="selectSubcat(\'' + escapedS + '\')">' +
+        s + '<div class="sub-amount">₹' + fmtNum(total) + '</div>' +
+        '</div>';
+    }).join('');
+
+    const rightRows = bySubcat[selectedSubcat].map(e =>
+      '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(e.Date) + '</td>' +
+      '<td>' + (e.Description || '—') + '</td>' +
+      '<td style="color:var(--text-muted);">' + (e.Vendor || '—') + '</td>' +
+      '<td class="text-right">₹' + fmtNum(expenseBaseInINR(e)) + '</td>' +
+      '<td class="text-right text-success">' + (parseFloat(e.GSTAmount||0) ? '₹'+fmtNum(e.GSTAmount) : '—') + '</td>' +
+      '<td class="text-right text-danger">' + (parseFloat(e.TDSAmount||0) ? '₹'+fmtNum(e.TDSAmount) : '—') + '</td>' +
+      '<td>' + statusBadge(e.Status) + '</td>' +
+      '</tr>'
+    ).join('');
+
+    const subcatTotal = bySubcat[selectedSubcat].reduce((s, e) => s + expenseBaseInINR(e), 0);
+    const catTotal = expenses.reduce((s, e) => s + expenseBaseInINR(e), 0);
+
+    return '<div class="drilldown-modal">' +
+      '<div class="drilldown-header">' +
+        '<div>' +
+          '<h3 style="font-size:14px;font-weight:500;">' + categoryName + '</h3>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Total ₹' + fmtNum(catTotal) + ' across ' + subcats.length + ' subcategories</div>' +
+        '</div>' +
+        '<button class="btn btn-sm" onclick="this.closest(\'.drilldown-overlay\').remove()">✕</button>' +
+      '</div>' +
+      '<div class="drilldown-body">' +
+        '<div class="drilldown-left">' + leftItems + '</div>' +
+        '<div class="drilldown-right" id="dd-right">' +
+          '<div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">' +
+            selectedSubcat + ' — ₹' + fmtNum(subcatTotal) + '</div>' +
+          '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+            '<thead><tr><th>Date</th><th>Description</th><th>Vendor</th><th>Amount</th><th>GST</th><th>TDS</th><th>Status</th></tr></thead>' +
+            '<tbody>' + rightRows + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'drilldown-overlay';
+  overlay.id = 'expense-drilldown';
+  overlay.innerHTML = buildOverlay();
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  // Make selectSubcat accessible
+  window.selectSubcat = function(s) {
+    selectedSubcat = s;
+    const ol = document.getElementById('expense-drilldown');
+    if (ol) { ol.innerHTML = buildOverlay(); }
+  };
+}
+
+// App ready
 </script>
 </body>
 </html>
