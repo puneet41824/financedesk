@@ -2399,7 +2399,7 @@ function rebuildPageSkeleton(page) {
     transactions: `
       <div class="filter-bar">
         <input type="text" placeholder="Search transactions..." id="txnSearch" oninput="renderTransactions()">
-        <select id="txnTypeFilter" onchange="renderTransactions()"><option value="">All types</option><option value="Invoice">Invoice</option><option value="Expense">Expense</option><option value="Loan">Loan</option></select>
+        <select id="txnTypeFilter" onchange="renderTransactions()"><option value="">All types</option><option value="Invoice">Invoice</option><option value="Expense">Expense</option><option value="Loan">Loan</option><option value="LoanDeduction">Loan Deduction</option></select>
       </div>
       <div class="card"><div class="table-wrap"><table>
         <thead><tr><th>Date</th><th>Payment Description</th><th>Type</th><th>Linked To</th><th>Amount (INR)</th></tr></thead>
@@ -3881,7 +3881,7 @@ async function savePayment() {
 
           if (empLoans.length > 0) {
             const oldestLoan = empLoans[0];
-            await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'Loan', oldestLoan.ID, 'Loan repayment: ' + emp.Name, deduction]);
+            await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'LoanDeduction', oldestLoan.ID, 'Salary deduction: ' + emp.Name, deduction]);
           } else {
             showToast('Warning: No outstanding loan found for ' + emp.Name + '. Deduction not linked.');
           }
@@ -4529,11 +4529,12 @@ function renderTransactions() {
 
   tbody.innerHTML = rows.map(t => {
     const payment = DATA.payments.find(p => p.ID === t.PaymentID);
-    const typeBadge = t.RefType === 'Invoice' ? 'badge-success' : t.RefType === 'Loan' ? 'badge-neutral' : 'badge-warning';
+    const typeBadge = t.RefType === 'Invoice' ? 'badge-success' : (t.RefType === 'Loan' || t.RefType === 'LoanDeduction') ? 'badge-neutral' : 'badge-warning';
+    const typeLabel = t.RefType === 'LoanDeduction' ? 'Loan Deduction' : t.RefType;
     return '<tr>' +
       '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(t.PaymentDate) + '</td>' +
       '<td>' + (payment?.Description || '—') + '</td>' +
-      '<td><span class="badge ' + typeBadge + '">' + t.RefType + '</span></td>' +
+      '<td><span class="badge ' + typeBadge + '">' + typeLabel + '</span></td>' +
       '<td><span style="font-weight:500;">' + (t.RefLabel || t.RefID) + '</span></td>' +
       '<td class="text-right"><strong>₹' + fmtNum(t.AmountINR) + '</strong></td>' +
       '</tr>';
@@ -4545,7 +4546,17 @@ function renderTransactions() {
 // ═══════════════════════════════════════════════════════
 function getTotalRepaid(loanId) {
   return DATA.transactions
-    .filter(t => t.RefType === 'Loan' && t.RefID === loanId)
+    .filter(t => {
+      if (t.RefID !== loanId) return false;
+      // LoanDeduction = salary deduction, always counts as repayment
+      if (t.RefType === 'LoanDeduction') return true;
+      // Loan transactions only count if the payment is Inward (cash repayment)
+      if (t.RefType === 'Loan') {
+        const payment = DATA.payments.find(p => p.ID === t.PaymentID);
+        return payment && payment.Type === 'Inward';
+      }
+      return false;
+    })
     .reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
 }
 
