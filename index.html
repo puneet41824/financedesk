@@ -3166,8 +3166,10 @@ function renderInvoices() {
       '<td class="text-right text-success"><strong>' + fmtNum(i.NetReceivable) + '</strong></td>' +
       '<td class="text-right" style="color:var(--text-muted);">' + (inrVal ? '₹' + fmtNum(inrVal) : '—') + '</td>' +
       '<td class="text-right">' +
-        '<span class="' + (amtReceived > 0 ? 'text-success' : 'text-muted') + '">₹' + fmtNum(amtReceived) + '</span>' +
-        (i.Status === 'Partial' ? '<br><span style="font-size:11px;color:var(--danger);">₹' + fmtNum(outstanding) + ' pending</span>' : '') +
+        (amtReceived > 0 ?
+          '<span class="text-success">₹' + fmtNum(amtReceived) + '</span>' +
+          (i.Status === 'Partial' ? '<br><span style="font-size:11px;color:var(--danger);">₹' + fmtNum(outstanding) + ' pending</span>' : '')
+          : '<span style="color:var(--text-hint);">—</span>') +
       '</td>' +
       '<td>' + ((i.Status === 'Paid' || i.Status === 'Partial') ?
         '<span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" onclick="showInvoiceTransactions(\'' + i.ID + '\')">' + statusBadge(i.Status) + '</span>' :
@@ -3809,9 +3811,11 @@ async function saveQuickExpense(rowIdx) {
   const total = round2(amount + gstAmt);
   const tdsAmt = round2(amount * tdsRate / 100);
   const netPayable = round2(total - tdsAmt);
+  const rate = getRate(currency);
+  const inrValue = round2(netPayable * rate);
   const newId = genId();
 
-  const dataRow = [newId, date, cat, subcat, vendor, pan, desc, currency, amount, gstRate, gstAmt, tdsRate, tdsAmt, total, netPayable, 'Unpaid', ''];
+  const dataRow = [newId, date, cat, subcat, vendor, pan, desc, currency, amount, gstRate, gstAmt, tdsRate, tdsAmt, total, netPayable, inrValue, rate, 'Unpaid', ''];
 
   try {
     await appendRow(SHEETS.expenses, dataRow);
@@ -4093,7 +4097,7 @@ function showBankUploadInfo() {
 // ═══════════════════════════════════════════════════════
 function renderReceivables() {
   const tbody = document.getElementById('receivablesTable');
-  const rows = DATA.receivables.sort((a,b) => new Date(a.ExpectedDate) - new Date(b.ExpectedDate));
+  const rows = [...DATA.receivables].sort((a,b) => new Date(a.ExpectedDate) - new Date(b.ExpectedDate));
 
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="icon">🔮</div><p>No future receivables. Add expected revenue that hasn't been invoiced yet.</p></div></td></tr>`;
@@ -4685,7 +4689,9 @@ async function saveLoan() {
 // EMPLOYEES
 // ═══════════════════════════════════════════════════════
 function getEmployeeOutstandingLoan(empId) {
-  const loans = DATA.loans.filter(l => l.EmployeeID === empId && l.Status !== 'Settled');
+  // Only "Given" loans count as employee debt outstanding
+  // "Taken" loans mean the employee lent money to the company — not their debt
+  const loans = DATA.loans.filter(l => l.EmployeeID === empId && l.Status !== 'Settled' && l.Type === 'Given');
   return loans.reduce((s, l) => {
     const paid = getTotalRepaid(l.ID);
     return s + Math.max(0, parseFloat(l.AmountINR || 0) - paid);
@@ -4694,7 +4700,7 @@ function getEmployeeOutstandingLoan(empId) {
 
 function renderEmployees() {
   const tbody = document.getElementById('employeesTable');
-  const rows = DATA.employees.sort((a, b) => a.Name.localeCompare(b.Name));
+  const rows = [...DATA.employees].sort((a, b) => a.Name.localeCompare(b.Name));
 
   if (!rows.length) {
     tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">👤</div><p>No employees yet. Add your first employee.</p></div></td></tr>';
@@ -4711,11 +4717,16 @@ function renderEmployees() {
       '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '">' + (outstanding > 0 ? '₹' + fmtNum(outstanding) : '—') + '</td>' +
       '<td><span class="badge ' + (e.Status === 'Active' ? 'badge-success' : 'badge-neutral') + '">' + (e.Status || 'Active') + '</span></td>' +
       '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
-        '<button class="btn btn-sm" onclick="openEmployeeModal(' + DATA.employees.indexOf(e) + ')">Edit</button>' +
+        '<button class="btn btn-sm" onclick="openEmployeeModalById(\'' + e.ID + '\')">Edit</button>' +
         '<button class="btn btn-sm btn-danger" onclick="deleteRecord(\'employees\',\'' + e.ID + '\',' + DATA.employees.indexOf(e) + ')">×</button>' +
       '</div></td>' +
       '</tr>';
   }).join('');
+}
+
+function openEmployeeModalById(id) {
+  const idx = DATA.employees.findIndex(e => e.ID === id);
+  openEmployeeModal(idx >= 0 ? idx : undefined);
 }
 
 function openEmployeeModal(idx) {
