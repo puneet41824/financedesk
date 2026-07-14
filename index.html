@@ -2370,8 +2370,8 @@ function rebuildPageSkeleton(page) {
         <select id="invClientFilter" onchange="renderInvoices()"><option value="">All clients</option></select>
       </div>
       <div class="card"><div class="table-wrap"><table>
-        <thead><tr><th>Invoice #</th><th>Date</th><th>Client</th><th>Currency</th><th>Base Amount</th><th>Tax</th><th>TDS</th><th>Net Receivable</th><th>INR Value</th><th>Status</th><th></th></tr></thead>
-        <tbody id="invoicesTable"><tr><td colspan="11"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+        <thead><tr><th>Invoice #</th><th>Date</th><th>Client</th><th>Currency</th><th>Base Amount</th><th>Tax</th><th>TDS</th><th>Net Receivable</th><th>INR Value</th><th>Amt Received</th><th>Status</th><th></th></tr></thead>
+        <tbody id="invoicesTable"><tr><td colspan="12"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
       </table></div></div>`,
 
     expenses: `
@@ -3147,12 +3147,14 @@ function renderInvoices() {
 
   const tbody = document.getElementById('invoicesTable');
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">📄</div><p>No invoices yet.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><div class="icon">📄</div><p>No invoices yet.</p></div></td></tr>';
     return;
   }
 
   tbody.innerHTML = rows.map(i => {
     const inrVal = parseFloat(i.INRValue || 0);
+    const amtReceived = getTotalPaid('Invoice', i.ID);
+    const outstanding = Math.max(0, (inrVal || (i.Currency === 'INR' ? parseFloat(i.NetReceivable || 0) : 0)) - amtReceived);
     return '<tr>' +
       '<td><span style="font-weight:500;font-size:12px;">' + i.InvoiceNumber + '</span>' + (i.IsExport === 'Yes' ? ' <span class="badge badge-warning" style="font-size:10px;">Export</span>' : '') + '</td>' +
       '<td style="color:var(--text-muted);font-size:12px;">' + fmtDate(i.Date) + '</td>' +
@@ -3163,13 +3165,16 @@ function renderInvoices() {
       '<td class="text-right text-danger">' + fmtNum(i.TDSAmount) + '</td>' +
       '<td class="text-right text-success"><strong>' + fmtNum(i.NetReceivable) + '</strong></td>' +
       '<td class="text-right" style="color:var(--text-muted);">' + (inrVal ? '₹' + fmtNum(inrVal) : '—') + '</td>' +
+      '<td class="text-right">' +
+        '<span class="' + (amtReceived > 0 ? 'text-success' : 'text-muted') + '">₹' + fmtNum(amtReceived) + '</span>' +
+        (i.Status === 'Partial' ? '<br><span style="font-size:11px;color:var(--danger);">₹' + fmtNum(outstanding) + ' pending</span>' : '') +
+      '</td>' +
       '<td>' + ((i.Status === 'Paid' || i.Status === 'Partial') ?
         '<span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;" onclick="showInvoiceTransactions(\'' + i.ID + '\')">' + statusBadge(i.Status) + '</span>' :
         statusBadge(i.Status)) + '</td>' +
       '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
         (i.Currency !== 'INR' && i.Status !== 'Paid' ? '<button class="btn btn-sm" title="Mark fully paid (override)" onclick="markInvoiceFullyPaid(\'' + i.ID + '\')">✓ Paid</button>' : '') +
         '<button class="btn btn-sm" onclick="editInvoice(' + DATA.invoices.indexOf(i) + ')">Edit</button>' +
-        '<button class="btn btn-sm btn-danger" onclick="deleteRecord(\'invoices\',\'' + i.ID + '\',' + DATA.invoices.indexOf(i) + ')">×</button>' +
       '</div></td>' +
       '</tr>';
   }).join('');
