@@ -4689,13 +4689,64 @@ async function saveLoan() {
 // EMPLOYEES
 // ═══════════════════════════════════════════════════════
 function getEmployeeOutstandingLoan(empId) {
-  // Only "Given" loans count as employee debt outstanding
-  // "Taken" loans mean the employee lent money to the company — not their debt
-  const loans = DATA.loans.filter(l => l.EmployeeID === empId && l.Status !== 'Settled' && l.Type === 'Given');
-  return loans.reduce((s, l) => {
+  const loans = DATA.loans.filter(l => l.EmployeeID === empId && l.Status !== 'Settled');
+  let given = 0; // company gave to employee (employee owes company)
+  let taken = 0; // employee gave to company (company owes employee)
+  loans.forEach(l => {
     const paid = getTotalRepaid(l.ID);
-    return s + Math.max(0, parseFloat(l.AmountINR || 0) - paid);
-  }, 0);
+    const outstanding = Math.max(0, parseFloat(l.AmountINR || 0) - paid);
+    if (l.Type === 'Given') given += outstanding;
+    else taken += outstanding;
+  });
+  return { given, taken, net: given - taken };
+}
+
+function showEmployeeLoanBreakup(empId, empName) {
+  const loans = DATA.loans.filter(l => l.EmployeeID === empId);
+  if (!loans.length) return;
+
+  const rows = loans.map(l => {
+    const paid = getTotalRepaid(l.ID);
+    const outstanding = Math.max(0, parseFloat(l.AmountINR || 0) - paid);
+    return '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(l.Date) + '</td>' +
+      '<td><span class="badge ' + (l.Type === 'Given' ? 'badge-warning' : 'badge-success') + '">' + l.Type + '</span></td>' +
+      '<td>' + (l.Description || '—') + '</td>' +
+      '<td class="text-right">₹' + fmtNum(l.AmountINR) + '</td>' +
+      '<td class="text-right text-success">₹' + fmtNum(paid) + '</td>' +
+      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '"><strong>₹' + fmtNum(outstanding) + '</strong></td>' +
+      '<td>' + statusBadge(l.Status) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  const { given, taken, net } = getEmployeeOutstandingLoan(empId);
+  const netLabel = net > 0 ? 'Employee owes company' : net < 0 ? 'Company owes employee' : 'Settled';
+  const netColor = net > 0 ? 'text-danger' : net < 0 ? 'text-success' : '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.style.zIndex = '300';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:680px;">' +
+      '<div class="modal-header">' +
+        '<h3>' + empName + ' — Loan Summary</h3>' +
+        '<button class="btn btn-sm" onclick="this.closest(\'.modal-overlay\').remove()">✕</button>' +
+      '</div>' +
+      '<div class="modal-body">' +
+        '<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">' +
+          '<div class="metric-card"><div class="metric-label">Given to Employee</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(given) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Taken from Employee</div><div class="metric-value text-success" style="font-size:18px;">₹' + fmtNum(taken) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Net (' + netLabel + ')</div><div class="metric-value ' + netColor + '" style="font-size:18px;">₹' + fmtNum(Math.abs(net)) + '</div></div>' +
+        '</div>' +
+        '<div class="table-wrap"><table style="font-size:13px;">' +
+          '<thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>Paid Back</th><th>Outstanding</th><th>Status</th></tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table></div>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
 
 function renderEmployees() {
@@ -4708,13 +4759,22 @@ function renderEmployees() {
   }
 
   tbody.innerHTML = rows.map(e => {
-    const outstanding = getEmployeeOutstandingLoan(e.ID);
+    const loanSummary = getEmployeeOutstandingLoan(e.ID);
+    const net = loanSummary.net;
+    const hasLoans = DATA.loans.some(l => l.EmployeeID === e.ID);
+    const netDisplay = net === 0 && !hasLoans ? '—' :
+      (net > 0 ? '<span style="color:var(--danger);">−₹' + fmtNum(net) + '</span>' :
+       net < 0 ? '<span style="color:var(--success);">+₹' + fmtNum(Math.abs(net)) + '</span>' :
+       '<span style="color:var(--text-hint);">Settled</span>');
+    const loanCell = hasLoans ?
+      '<a href="javascript:void(0)" onclick="showEmployeeLoanBreakup(\'' + e.ID + '\',\'' + e.Name.replace(/'/g, "\\'") + '\')" style="text-decoration:underline;text-decoration-style:dotted;color:inherit;">' + netDisplay + '</a>' :
+      netDisplay;
     return '<tr>' +
       '<td><strong style="font-weight:500;">' + e.Name + '</strong></td>' +
       '<td class="text-right">₹' + fmtNum(e.MonthlySalary) + '</td>' +
       '<td class="text-right">₹' + fmtNum(e.AnnualBonus || 0) + '</td>' +
       '<td style="color:var(--text-muted);">' + (e.JoiningDate ? fmtDate(e.JoiningDate) : '—') + '</td>' +
-      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '">' + (outstanding > 0 ? '₹' + fmtNum(outstanding) : '—') + '</td>' +
+      '<td class="text-right">' + loanCell + '</td>' +
       '<td><span class="badge ' + (e.Status === 'Active' ? 'badge-success' : 'badge-neutral') + '">' + (e.Status || 'Active') + '</span></td>' +
       '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
         '<button class="btn btn-sm" onclick="openEmployeeModalById(\'' + e.ID + '\')">Edit</button>' +
