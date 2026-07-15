@@ -3769,7 +3769,7 @@ async function saveQuickLoan(rowIdx) {
   const desc = document.getElementById('ql-desc-' + rowIdx)?.value || '';
   const newId = genId();
 
-  const dataRow = [newId, date, person, type, amount, desc, 'Pending', ''];
+  const dataRow = [newId, date, person, '', type, amount, desc, 'Pending', ''];
   try {
     await appendRow(SHEETS.loans, dataRow);
     await loadAllData();
