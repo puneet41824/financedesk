@@ -4554,15 +4554,24 @@ function renderTransactions() {
 // LOANS
 // ═══════════════════════════════════════════════════════
 function getTotalRepaid(loanId) {
+  const loan = DATA.loans.find(l => l.ID === loanId);
+  const loanType = loan ? loan.Type : 'Given';
+
   return DATA.transactions
     .filter(t => {
       if (t.RefID !== loanId) return false;
-      // LoanDeduction = salary deduction, always counts as repayment
-      if (t.RefType === 'LoanDeduction') return true;
-      // Loan transactions only count if the payment is Inward (cash repayment)
+      // LoanDeduction (salary deduction) only applies to Given loans
+      if (t.RefType === 'LoanDeduction') return loanType === 'Given';
       if (t.RefType === 'Loan') {
         const payment = DATA.payments.find(p => p.ID === t.PaymentID);
-        return payment && payment.Type === 'Inward';
+        if (!payment) return false;
+        if (loanType === 'Given') {
+          // Company lent out → repaid when money comes back IN
+          return payment.Type === 'Inward';
+        } else {
+          // Company borrowed → repaid when money goes back OUT to lender
+          return payment.Type === 'Outward';
+        }
       }
       return false;
     })
