@@ -2357,10 +2357,6 @@ function rebuildPageSkeleton(page) {
         <div class="metric-card"><div class="metric-label">Total Expenses (FY)</div><div class="metric-value" id="m-expenses">—</div><div class="metric-sub">Current financial year</div></div>
         <div class="metric-card"><div class="metric-label">Future Receivables</div><div class="metric-value" id="m-future">—</div><div class="metric-sub">Expected, not invoiced</div></div>
       </div>
-      <div class="card" style="margin-bottom:16px;" id="dash-recon-card">
-        <div class="card-header"><div class="card-title">💰 Bank Reconciliation</div><div id="dash-recon-date" style="font-size:11px;color:var(--text-muted);"></div></div>
-        <div id="dash-recon-body"><div class="empty-state" style="padding:20px;"><p>Set BankOpeningBalance in Settings sheet to enable reconciliation.</p></div></div>
-      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div class="card"><div class="card-header"><div class="card-title">Recent Invoices</div><button class="btn btn-sm" onclick="navigate('invoices')">View all</button></div><div id="dash-recent-invoices"><div class="empty-state"><p>Loading...</p></div></div></div>
         <div class="card"><div class="card-header"><div class="card-title">Upcoming Receivables</div><button class="btn btn-sm" onclick="navigate('receivables')">View all</button></div><div id="dash-receivables"><div class="empty-state"><p>Loading...</p></div></div></div>
@@ -2498,10 +2494,6 @@ function rebuildPageSkeleton(page) {
         <div class="kpi-card"><div class="kpi-label">Payments Pending Tagging</div><div class="kpi-number" id="kpi-untagged" style="color:var(--warning);">—</div><div class="kpi-sub">Both inward &amp; outward</div></div>
         <div class="kpi-card"><div class="kpi-label">Invoices Unpaid</div><div class="kpi-number" id="kpi-inv-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-inv-amount">—</div></div>
         <div class="kpi-card"><div class="kpi-label">Expenses Unpaid</div><div class="kpi-number" id="kpi-exp-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-exp-amount">—</div></div>
-      </div>
-      <div class="card" style="margin-bottom:16px;">
-        <div class="card-header"><div class="card-title">💰 Bank Reconciliation</div><div id="ops-recon-date" style="font-size:11px;color:var(--text-muted);"></div></div>
-        <div id="ops-recon-body"><div class="empty-state" style="padding:20px;"><p>Set BankOpeningBalance in Settings sheet to enable reconciliation.</p></div></div>
       </div>
       <div class="ops-tabs">
         <div class="ops-tab active" onclick="switchOpsTab('tagging',this)">Pending Tagging</div>
@@ -2977,9 +2969,6 @@ function renderDashboard() {
       </tr>`).join('')}
     </table>`;
   }
-
-  // Bank reconciliation
-  renderReconciliation('dash-recon-body', 'dash-recon-date');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -5212,6 +5201,15 @@ function renderReconciliation(bodyId, dateId) {
     .reduce((s, p) => s + parseFloat(p.AmountINR || 0), 0);
   const closingBalance = openingBalance + totalInward - totalOutward;
 
+  // Latest payment date — tells user up to when the data is current
+  const latestPaymentDate = payments.reduce((latest, p) => {
+    const d = parseLocalDate(p.Date);
+    return d > latest ? d : latest;
+  }, new Date(0));
+  const latestDateStr = payments.length > 0
+    ? latestPaymentDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : 'No payments';
+
   bodyEl.innerHTML =
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">' +
       '<div class="metric-card">' +
@@ -5232,7 +5230,7 @@ function renderReconciliation(bodyId, dateId) {
       '<div class="metric-card">' +
         '<div class="metric-label">System Closing Balance</div>' +
         '<div class="metric-value ' + (closingBalance >= 0 ? 'text-success' : 'text-danger') + '" style="font-size:18px;">₹' + fmtNum(closingBalance) + '</div>' +
-        '<div class="metric-sub">As of today</div>' +
+        '<div class="metric-sub">Data as of ' + latestDateStr + '</div>' +
       '</div>' +
     '</div>';
 }
