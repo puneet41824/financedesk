@@ -1359,6 +1359,7 @@
         <div class="kpi-card"><div class="kpi-label">Expenses Unpaid</div><div class="kpi-number" id="kpi-exp-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-exp-amount">—</div></div>
         <div class="kpi-card"><div class="kpi-label">⚠ Expense Integrity</div><div class="kpi-number" id="kpi-exp-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Paid but no transactions</div></div>
         <div class="kpi-card"><div class="kpi-label">⚠ Invoice Integrity</div><div class="kpi-number" id="kpi-inv-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Paid but no transactions</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠ Payment Integrity</div><div class="kpi-number" id="kpi-pay-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Mismatched links</div></div>
       </div>
 
       <div class="ops-tabs">
@@ -1367,6 +1368,7 @@
         <div class="ops-tab" onclick="switchOpsTab('expenses', this)">Unpaid Expenses</div>
         <div class="ops-tab" onclick="switchOpsTab('exp-integrity', this)">⚠ Expense Integrity</div>
         <div class="ops-tab" onclick="switchOpsTab('inv-integrity', this)">⚠ Invoice Integrity</div>
+        <div class="ops-tab" onclick="switchOpsTab('pay-integrity', this)">⚠ Payment Integrity</div>
       </div>
 
       <div class="card" id="ops-table-container">
@@ -2566,6 +2568,7 @@ function rebuildPageSkeleton(page) {
         <div class="kpi-card"><div class="kpi-label">Expenses Unpaid</div><div class="kpi-number" id="kpi-exp-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-exp-amount">—</div></div>
         <div class="kpi-card"><div class="kpi-label">⚠ Expense Integrity</div><div class="kpi-number" id="kpi-exp-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Paid but no transactions</div></div>
         <div class="kpi-card"><div class="kpi-label">⚠ Invoice Integrity</div><div class="kpi-number" id="kpi-inv-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Paid but no transactions</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠ Payment Integrity</div><div class="kpi-number" id="kpi-pay-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Mismatched links</div></div>
       </div>
       <div class="ops-tabs">
         <div class="ops-tab active" onclick="switchOpsTab('tagging',this)">Pending Tagging</div>
@@ -2573,6 +2576,7 @@ function rebuildPageSkeleton(page) {
         <div class="ops-tab" onclick="switchOpsTab('expenses',this)">Unpaid Expenses</div>
         <div class="ops-tab" onclick="switchOpsTab('exp-integrity',this)">⚠ Expense Integrity</div>
         <div class="ops-tab" onclick="switchOpsTab('inv-integrity',this)">⚠ Invoice Integrity</div>
+        <div class="ops-tab" onclick="switchOpsTab('pay-integrity',this)">⚠ Payment Integrity</div>
       </div>
       <div class="card"><div class="table-wrap"><table id="ops-table">
         <thead id="ops-thead"></thead>
@@ -5059,6 +5063,9 @@ function renderOperations() {
     return txns.length === 0;
   });
 
+  // Payment integrity — 4 checks
+  const payIntegrityIssues = getPaymentIntegrityIssues();
+
   const kpiUntagged = document.getElementById('kpi-untagged');
   const kpiInvUnpaid = document.getElementById('kpi-inv-unpaid');
   const kpiInvAmt = document.getElementById('kpi-inv-amount');
@@ -5066,6 +5073,7 @@ function renderOperations() {
   const kpiExpAmt = document.getElementById('kpi-exp-amount');
   const kpiExpInt = document.getElementById('kpi-exp-integrity');
   const kpiInvInt = document.getElementById('kpi-inv-integrity');
+  const kpiPayInt = document.getElementById('kpi-pay-integrity');
 
   if (kpiUntagged) kpiUntagged.textContent = untagged.length;
   if (kpiInvUnpaid) kpiInvUnpaid.textContent = unpaidInv.length;
@@ -5074,6 +5082,7 @@ function renderOperations() {
   if (kpiExpAmt) kpiExpAmt.textContent = '₹' + fmtNum(pendingExpAmt) + ' outstanding';
   if (kpiExpInt) kpiExpInt.textContent = expIntegrityIssues.length;
   if (kpiInvInt) kpiInvInt.textContent = invIntegrityIssues.length;
+  if (kpiPayInt) kpiPayInt.textContent = payIntegrityIssues.length;
 
   renderOpsTable(currentOpsTab);
 }
@@ -5203,6 +5212,32 @@ function renderOpsTable(tab) {
       '<td class="text-right" style="color:var(--text-muted);">' + (i.INRValue ? '₹' + fmtNum(i.INRValue) : '—') + '</td>' +
       '<td>' + statusBadge(i.Status) + '</td>' +
       '<td style="color:var(--danger);font-size:12px;font-weight:500;">Marked ' + i.Status + ' but no payment transaction found</td>' +
+      '</tr>'
+    ).join('');
+
+  } else if (tab === 'pay-integrity') {
+    const issues = getPaymentIntegrityIssues();
+    thead.innerHTML = '<tr><th>Check</th><th>Severity</th><th>Date</th><th>Payment</th><th>Payment Amt</th><th>Ref Type</th><th>Linked To</th><th>Tagged Total</th><th>Issue</th></tr>';
+
+    if (!issues.length) {
+      tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="icon">✓</div><p>All payment links are clean — no integrity issues found!</p></div></td></tr>';
+      return;
+    }
+
+    const sevColor = { High: '#fff0f0', Medium: '#fffbec', Low: '#f0fff4' };
+    const sevBadge = { High: 'badge-danger', Medium: 'badge-warning', Low: 'badge-success' };
+
+    tbody.innerHTML = issues.map(issue =>
+      '<tr style="background:' + (sevColor[issue.severity] || '#fff') + ';">' +
+      '<td style="font-size:11px;font-weight:600;color:var(--text-muted);">' + issue.type + '</td>' +
+      '<td><span class="badge ' + (sevBadge[issue.severity] || 'badge-neutral') + '">' + issue.severity + '</span></td>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(issue.paymentDate) + '</td>' +
+      '<td style="font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + issue.paymentDesc + '">' + (issue.paymentDesc || '—') + '</td>' +
+      '<td class="text-right">₹' + fmtNum(issue.paymentAmt) + '</td>' +
+      '<td><span class="badge badge-neutral" style="font-size:10px;">' + issue.refType + '</span></td>' +
+      '<td style="font-size:12px;color:var(--text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + issue.refLabel + '">' + (issue.refLabel || '—') + '</td>' +
+      '<td class="text-right">' + (issue.txnAmt !== '—' ? '₹' + fmtNum(issue.txnAmt) : '—') + '</td>' +
+      '<td style="font-size:12px;color:var(--danger);">' + issue.issue + '</td>' +
       '</tr>'
     ).join('');
   }
@@ -5575,6 +5610,133 @@ async function bulkSaveCCEntry(row, rowNum, errors) {
     currency, base, gstRate, gstAmt, tdsRate, tdsAmt, total, net,
     round2(net * rate), rate, 'Paid', (row['Notes'] || '').toString().trim()
   ]);
+}
+
+// ═══════════════════════════════════════════════════════
+// PAYMENT INTEGRITY CHECKS
+// ═══════════════════════════════════════════════════════
+function getPaymentIntegrityIssues() {
+  const issues = [];
+
+  // Build lookup maps for fast access
+  const invoiceMap = Object.fromEntries(DATA.invoices.map(i => [i.ID, i]));
+  const expenseMap = Object.fromEntries(DATA.expenses.map(e => [e.ID, e]));
+  const paymentMap = Object.fromEntries(DATA.payments.map(p => [p.ID, p]));
+
+  // Group transactions by payment
+  const txnsByPayment = {};
+  DATA.transactions.forEach(t => {
+    if (!txnsByPayment[t.PaymentID]) txnsByPayment[t.PaymentID] = [];
+    txnsByPayment[t.PaymentID].push(t);
+  });
+
+  // Check 1 & 2 & 3 — scan each transaction
+  DATA.transactions.forEach(t => {
+    const payment = paymentMap[t.PaymentID];
+    if (!payment) {
+      issues.push({
+        type: 'Type 1 — Orphan Transaction',
+        severity: 'High',
+        paymentDate: t.PaymentDate || '—',
+        paymentDesc: '(Payment not found)',
+        paymentAmt: '—',
+        refType: t.RefType,
+        refLabel: t.RefLabel || t.RefID,
+        txnAmt: t.AmountINR,
+        issue: 'Transaction references PaymentID that does not exist in Payments sheet'
+      });
+      return;
+    }
+
+    if (t.RefType === 'Invoice') {
+      const inv = invoiceMap[t.RefID];
+      if (!inv) {
+        // Type 1 — orphan link to deleted invoice
+        issues.push({
+          type: 'Type 1 — Orphan Link',
+          severity: 'High',
+          paymentDate: payment.Date,
+          paymentDesc: payment.Description,
+          paymentAmt: payment.AmountINR,
+          refType: 'Invoice',
+          refLabel: t.RefLabel || t.RefID,
+          txnAmt: t.AmountINR,
+          issue: 'Transaction linked to Invoice ID that does not exist'
+        });
+      }
+      // Type 3 — direction check: invoice payments should be Inward
+      if (payment && payment.Type === 'Outward') {
+        issues.push({
+          type: 'Type 3 — Direction Mismatch',
+          severity: 'Medium',
+          paymentDate: payment.Date,
+          paymentDesc: payment.Description,
+          paymentAmt: payment.AmountINR,
+          refType: 'Invoice',
+          refLabel: t.RefLabel || (inv ? inv.InvoiceNumber : t.RefID),
+          txnAmt: t.AmountINR,
+          issue: 'Invoice payment tagged to an Outward payment — should be Inward'
+        });
+      }
+
+    } else if (t.RefType === 'Expense') {
+      const exp = expenseMap[t.RefID];
+      if (!exp) {
+        issues.push({
+          type: 'Type 1 — Orphan Link',
+          severity: 'High',
+          paymentDate: payment.Date,
+          paymentDesc: payment.Description,
+          paymentAmt: payment.AmountINR,
+          refType: 'Expense',
+          refLabel: t.RefLabel || t.RefID,
+          txnAmt: t.AmountINR,
+          issue: 'Transaction linked to Expense ID that does not exist'
+        });
+      }
+      // Type 3 — expense payments should be Outward
+      if (payment && payment.Type === 'Inward') {
+        issues.push({
+          type: 'Type 3 — Direction Mismatch',
+          severity: 'Medium',
+          paymentDate: payment.Date,
+          paymentDesc: payment.Description,
+          paymentAmt: payment.AmountINR,
+          refType: 'Expense',
+          refLabel: t.RefLabel || (exp ? (exp.Category + '/' + exp.Subcategory) : t.RefID),
+          txnAmt: t.AmountINR,
+          issue: 'Expense payment tagged to an Inward payment — should be Outward'
+        });
+      }
+    }
+  });
+
+  // Check 4 — payment amount vs sum of tagged transactions
+  DATA.payments.forEach(p => {
+    const txns = txnsByPayment[p.ID] || [];
+    if (!txns.length) return; // untagged — caught by pending tagging tab
+    const taggedTotal = round2(txns.reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0));
+    const payAmt = round2(parseFloat(p.AmountINR || 0));
+    const diff = round2(Math.abs(payAmt - taggedTotal));
+    if (diff > 0.5) { // tolerance of 50 paise for rounding
+      issues.push({
+        type: 'Type 4 — Amount Mismatch',
+        severity: diff > 1000 ? 'High' : 'Medium',
+        paymentDate: p.Date,
+        paymentDesc: p.Description,
+        paymentAmt: payAmt,
+        refType: p.Type,
+        refLabel: txns.map(t => t.RefLabel || t.RefType).join(', '),
+        txnAmt: taggedTotal,
+        issue: 'Payment ₹' + fmtNum(payAmt) + ' ≠ Tagged total ₹' + fmtNum(taggedTotal) + ' (diff ₹' + fmtNum(diff) + ')'
+      });
+    }
+  });
+
+  return issues.sort((a, b) => {
+    const sev = {High: 0, Medium: 1, Low: 2};
+    return (sev[a.severity] || 2) - (sev[b.severity] || 2);
+  });
 }
 
 // App ready
