@@ -938,6 +938,9 @@
     <div class="nav-item" onclick="navigate('budget')">
       <span class="icon">🎯</span> Budget
     </div>
+    <div class="nav-item" onclick="navigate('comparison')">
+      <span class="icon">📊</span> Comparison
+    </div>
   </div>
 
   <div class="sidebar-section">
@@ -1358,6 +1361,23 @@
       </div>
     </div>
 
+    <!-- COMPARISON -->
+    <div class="page" id="page-comparison">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="budget-tabs" style="margin-bottom:0;">
+          <div class="compare-tab budget-tab active" onclick="switchCompareTab('income',this)">Income</div>
+          <div class="compare-tab budget-tab" onclick="switchCompareTab('expense',this)">Expense</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="compare-include-fr" onchange="renderComparison()">
+          Include Future Receivables (past months only)
+        </label>
+      </div>
+      <div class="card" style="overflow-x:auto;">
+        <div id="compare-matrix-container"><div class="empty-state"><p>Loading...</p></div></div>
+      </div>
+    </div>
+
     <!-- BUDGET -->
     <div class="page" id="page-budget">
       <div class="budget-tabs">
@@ -1565,6 +1585,28 @@
           <label>Client *</label>
           <select id="i-client" onchange="onInvoiceClientChange()">
             <option value="">Select client...</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Project</label>
+          <input type="text" id="i-project" placeholder="Project name (for budget tracking)">
+        </div>
+        <div class="form-group">
+          <label>Service Month <span style="font-size:11px;color:var(--text-muted);">(for budget matching)</span></label>
+          <select id="i-service-month">
+            <option value="">— Not in current FY —</option>
+            <option value="2026-04">Apr 26</option>
+            <option value="2026-05">May 26</option>
+            <option value="2026-06">Jun 26</option>
+            <option value="2026-07">Jul 26</option>
+            <option value="2026-08">Aug 26</option>
+            <option value="2026-09">Sep 26</option>
+            <option value="2026-10">Oct 26</option>
+            <option value="2026-11">Nov 26</option>
+            <option value="2026-12">Dec 26</option>
+            <option value="2027-01">Jan 27</option>
+            <option value="2027-02">Feb 27</option>
+            <option value="2027-03">Mar 27</option>
           </select>
         </div>
         <div class="form-group full">
@@ -1994,7 +2036,7 @@ const SHEETS = {
 // Sheet headers
 const HEADERS = {
   clients: ['ID','Name','Type','GSTNumber','State','Country','City','ContactPerson','Email','Phone','GSTApplicable','TDSRate','Notes'],
-  invoices: ['ID','InvoiceNumber','Date','ClientID','ClientName','Description','Currency','BaseAmount','GSTType','CGSTRate','SGSTRate','IGSTRate','CGSTAmount','SGSTAmount','IGSTAmount','TotalTax','InvoiceTotal','TDSRate','TDSAmount','NetReceivable','INRValue','RateUsed','Status','IsExport','Notes'],
+  invoices: ['ID','InvoiceNumber','Date','ClientID','ClientName','Project','ServiceMonth','Description','Currency','BaseAmount','GSTType','CGSTRate','SGSTRate','IGSTRate','CGSTAmount','SGSTAmount','IGSTAmount','TotalTax','InvoiceTotal','TDSRate','TDSAmount','NetReceivable','INRValue','RateUsed','Status','IsExport','Notes'],
   expenses: ['ID','Date','Category','Subcategory','Vendor','PAN','Description','Currency','BaseAmount','GSTRate','GSTAmount','TDSRate','TDSAmount','TotalPayable','NetPayable','INRValue','RateUsed','Status','Notes'],
   payments: ['ID','Date','Description','Type','AmountINR','Reference','PersonName','Status'],
   transactions: ['ID','PaymentID','PaymentDate','RefType','RefID','RefLabel','AmountINR'],
@@ -2379,7 +2421,8 @@ const PAGE_TITLES = {
   employees: 'Employees',
   operations: 'Operations Dashboard',
   creditcard: 'Credit Card',
-  budget: 'Budget'
+  budget: 'Budget',
+  comparison: 'Budget vs Actual'
 };
 
 function getPageActions(page) {
@@ -2394,6 +2437,7 @@ function getPageActions(page) {
              '<button class="btn" data-module="employees" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
              '<button class="btn" data-module="employees" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>',
     creditcard: '<button class="btn btn-primary" onclick="openCCModal()">+ Add Entry</button>',
+    comparison: '',
     budget: '<button class="btn" onclick="uploadBudget(\'income\')">&#8593; Upload Income Budget</button>' +
             '<button class="btn" onclick="uploadBudget(\'expense\')">&#8593; Upload Expense Budget</button>' +
             '<button class="btn btn-sm" onclick="downloadBudgetTemplate(\'income\')">&#8595; Income Template</button>' +
@@ -2607,6 +2651,21 @@ function rebuildPageSkeleton(page) {
         <button class="btn btn-primary" onclick="saveCurrencyRates()" style="margin-top:16px;width:100%;" id="saveCurrencyBtn">Save Rates</button>
       </div>`,
 
+    comparison: `
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+        <div class="budget-tabs" style="margin-bottom:0;">
+          <div class="compare-tab budget-tab active" onclick="switchCompareTab('income',this)">Income</div>
+          <div class="compare-tab budget-tab" onclick="switchCompareTab('expense',this)">Expense</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);cursor:pointer;">
+          <input type="checkbox" id="compare-include-fr" onchange="renderComparison()">
+          Include Future Receivables (past months only)
+        </label>
+      </div>
+      <div class="card" style="overflow-x:auto;">
+        <div id="compare-matrix-container"><div class="empty-state"><p>Loading...</p></div></div>
+      </div>`,
+
     budget: `
       <div class="budget-tabs">
         <div class="budget-tab active" onclick="switchBudgetTab('income',this)">Income Budget</div>
@@ -2673,6 +2732,7 @@ function renderPage() {
     case 'operations': renderOperations(); break;
     case 'creditcard': renderCreditCard(); break;
     case 'budget': renderBudget(); break;
+    case 'comparison': renderComparison(); break;
   }
 }
 
@@ -2977,6 +3037,8 @@ async function bulkSaveInvoice(row, rowNum, errors) {
   const dataRow = [
     genId(), invNum, dateStr,
     client.ID, client.Name,
+    row['Project'] || '',
+    row['ServiceMonth'] || '',
     row['Description'] || '',
     currency, base, gstType,
     gstType === 'cgst_sgst' ? 9 : 0,
@@ -3332,7 +3394,8 @@ function renderInvoices() {
     return '<tr>' +
       '<td><span style="font-weight:500;font-size:12px;">' + i.InvoiceNumber + '</span>' + (i.IsExport === 'Yes' ? ' <span class="badge badge-warning" style="font-size:10px;">Export</span>' : '') + '</td>' +
       '<td style="color:var(--text-muted);font-size:12px;">' + fmtDate(i.Date) + '</td>' +
-      '<td>' + i.ClientName + '</td>' +
+      '<td>' + i.ClientName + (i.Project ? '<br><span style="font-size:11px;color:var(--text-muted);">' + i.Project + '</span>' : '') +
+        (i.ServiceMonth ? '<br><span style="font-size:10px;color:var(--primary);">Svc: ' + MONTH_LABELS[FY_MONTHS.indexOf(i.ServiceMonth)] + '</span>' : '') + '</td>' +
       '<td><span class="badge badge-neutral">' + i.Currency + '</span></td>' +
       '<td class="text-right">' + fmtNum(i.BaseAmount) + '</td>' +
       '<td class="text-right" style="color:var(--text-muted);">' + fmtNum(i.TotalTax) + '</td>' +
@@ -3360,7 +3423,6 @@ function openInvoiceModal(idx) {
   editingId = idx !== undefined ? DATA.invoices[idx].ID : null;
   document.getElementById('invoiceModalTitle').textContent = editingId ? 'Edit Invoice' : 'Add Invoice';
 
-  // Populate clients
   const sel = document.getElementById('i-client');
   sel.innerHTML = '<option value="">Select client...</option>' +
     DATA.clients.map(c => `<option value="${c.ID}">${c.Name}</option>`).join('');
@@ -3369,6 +3431,8 @@ function openInvoiceModal(idx) {
   setVal('i-num', inv.InvoiceNumber || '');
   setVal('i-date', inv.Date || today());
   setVal('i-client', inv.ClientID || '');
+  setVal('i-project', inv.Project || '');
+  setVal('i-service-month', inv.ServiceMonth || '');
   setVal('i-desc', inv.Description || '');
   setVal('i-currency', inv.Currency || 'INR');
   setVal('i-base', inv.BaseAmount || '');
@@ -3468,6 +3532,8 @@ async function saveInvoice() {
     getVal('i-date'),
     clientId,
     client?.Name || '',
+    getVal('i-project').trim(),
+    getVal('i-service-month'),
     getVal('i-desc'),
     currency,
     base,
@@ -5888,9 +5954,23 @@ const MONTH_LABELS = [
 ];
 
 let currentBudgetTab = 'income';
-let editingBudgetCell = null; // {rowKey, month}
+let editingBudgetCell = null;
 let budgetUploadType = null;
 
+// Determine current month key
+function currentMonthKey() {
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+}
+
+function toMonthKey(dateStr) {
+  if (!dateStr) return '';
+  const d = parseLocalDate(dateStr);
+  if (!d) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+// ── BUDGET PAGE ─────────────────────────────────────────
 function renderBudget() {
   renderBudgetMatrix(currentBudgetTab);
 }
@@ -5902,333 +5982,185 @@ function switchBudgetTab(tab, el) {
   renderBudgetMatrix(tab);
 }
 
-// ── Get month string from invoice/expense date ──────────
-function toMonthKey(dateStr) {
-  if (!dateStr) return '';
-  const d = parseLocalDate(dateStr);
-  if (!d) return '';
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-}
-
-// ── INCOME MATRIX ───────────────────────────────────────
 function renderBudgetMatrix(tab) {
   const container = document.getElementById('budget-matrix-container');
   if (!container) return;
-
-  if (tab === 'income') {
-    renderIncomeBudgetMatrix(container);
-  } else {
-    renderExpenseBudgetMatrix(container);
-  }
+  tab === 'income' ? renderIncomeBudgetEntry(container) : renderExpenseBudgetEntry(container);
 }
 
-function renderIncomeBudgetMatrix(container) {
-  // Budget lookup: client|project|month → amount
+function renderIncomeBudgetEntry(container) {
   const budgetMap = {};
   DATA.budgetIncome.forEach(r => {
-    const key = (r.Client||'') + '|' + (r.Project||'') + '|' + r.Month;
-    budgetMap[key] = parseFloat(r.BudgetAmount || 0);
+    budgetMap[(r.Client||'') + '|' + (r.Project||'') + '|' + r.Month] = parseFloat(r.BudgetAmount || 0);
   });
 
-  // Actual lookup from invoices: client|project|month → INR base
-  const actualMap = {};
-  DATA.invoices.forEach(i => {
-    const month = toMonthKey(i.Date);
-    if (!FY_MONTHS.includes(month)) return;
-    const key = (i.ClientName||'') + '||' + month;
-    actualMap[key] = (actualMap[key] || 0) + invoiceBaseInINR(i);
-  });
-
-  // Pipeline lookup from future receivables: client|project|month → INR amount
-  const pipelineMap = {};
-  DATA.receivables.forEach(r => {
-    const month = toMonthKey(r.ExpectedDate);
-    if (!month || !FY_MONTHS.includes(month)) return;
-    const amt = parseFloat(r.Amount || 0) * getRate(r.Currency || 'INR');
-    const key = (r.ClientName||'') + '|' + (r.Project||'') + '|' + month;
-    pipelineMap[key] = (pipelineMap[key] || 0) + amt;
-  });
-
-  // Unique rows from budget + actuals + pipeline
   const rowKeys = new Set();
   DATA.budgetIncome.forEach(r => rowKeys.add((r.Client||'') + '|' + (r.Project||'')));
-  DATA.invoices.forEach(i => { const m = toMonthKey(i.Date); if (FY_MONTHS.includes(m)) rowKeys.add((i.ClientName||'') + '|'); });
-  DATA.receivables.forEach(r => { const m = toMonthKey(r.ExpectedDate); if (m && FY_MONTHS.includes(m)) rowKeys.add((r.ClientName||'') + '|' + (r.Project||'')); });
 
   const rows = [...rowKeys].sort();
-  const showForecast = window.budgetShowForecast !== false;
 
   if (!rows.length) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>No income budget data yet. Upload a budget using the ↑ Upload Income Budget button.</p></div>';
+    container.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>No income budget yet. Upload using the ↑ Upload Income Budget button, or add a row below.</p><button class="btn btn-primary" onclick="addBudgetIncomeRow()" style="margin-top:12px;">+ Add Client/Project Row</button></div>';
     return;
   }
 
-  // Toggle bar
-  let html = '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">' +
-    '<span style="font-size:12px;color:var(--text-muted);">View:</span>' +
-    '<button class="btn btn-sm ' + (!showForecast ? 'btn-primary' : '') + '" onclick="window.budgetShowForecast=false;renderBudgetMatrix(\'income\')">Budget vs Actual</button>' +
-    '<button class="btn btn-sm ' + (showForecast ? 'btn-primary' : '') + '" onclick="window.budgetShowForecast=true;renderBudgetMatrix(\'income\')">Full Forecast</button>' +
-    '<span style="font-size:11px;color:var(--text-hint);margin-left:8px;">🟢 = on/above target &nbsp; 🟡 = within 10% &nbsp; 🔴 = below target</span>' +
-    '</div>';
-
-  const budgetTotals = {}, actualTotals = {}, pipelineTotals = {};
-  FY_MONTHS.forEach(m => { budgetTotals[m] = 0; actualTotals[m] = 0; pipelineTotals[m] = 0; });
-
-  html += '<table class="budget-matrix"><thead><tr>' +
-    '<th style="min-width:140px;">Client</th>' +
-    '<th style="min-width:120px;">Project</th>' +
-    MONTH_LABELS.map(m => '<th>' + m + '</th>').join('') +
+  let html = '<table class="budget-matrix"><thead><tr>' +
+    '<th style="min-width:160px;position:sticky;left:0;z-index:3;background:var(--primary);">Client</th>' +
+    '<th style="min-width:140px;position:sticky;left:160px;z-index:3;background:var(--primary);">Project</th>' +
+    MONTH_LABELS.map((m, i) => '<th>' + m + '</th>').join('') +
     '<th>Total</th></tr></thead><tbody>';
+
+  let grandTotal = 0;
+  const colTotals = {};
+  FY_MONTHS.forEach(m => colTotals[m] = 0);
 
   rows.forEach(rowKey => {
     const [client, project] = rowKey.split('|');
-    let rowBudget = 0, rowActual = 0, rowPipeline = 0;
-
-    // Budget row
-    html += '<tr>';
-    html += '<td>' + (client || '—') + '</td>';
-    html += '<td>' + (project || '—') + '</td>';
+    let rowTotal = 0;
+    html += '<tr><td>' + (client||'—') + '</td><td style="color:var(--text-muted);">' + (project||'—') + '</td>';
     FY_MONTHS.forEach(month => {
-      const bAmt = budgetMap[client+'|'+(project||'')+'|'+month] || 0;
-      rowBudget += bAmt; budgetTotals[month] += bAmt;
-      html += '<td><span class="budget-cell" onclick="startEditBudget(this,\'' + encodeURIComponent(rowKey) + '\',\'' + month + '\',\'income\')" data-val="' + bAmt + '">' +
-        (bAmt ? '₹' + fmtNum(bAmt) : '<span style="color:var(--text-hint);">—</span>') + '</span></td>';
+      const amt = budgetMap[rowKey + '|' + month] || 0;
+      rowTotal += amt; colTotals[month] += amt;
+      html += '<td><span class="budget-cell" onclick="startEditBudget(this,\'' + encodeURIComponent(rowKey) + '\',\'' + month + '\',\'income\')" data-val="' + amt + '">' +
+        (amt ? '₹' + fmtNum(amt) : '<span style="color:var(--text-hint);">—</span>') + '</span></td>';
     });
-    html += '<td><strong>₹' + fmtNum(rowBudget) + '</strong></td></tr>';
-
-    // Actual row
-    html += '<tr class="row-actual"><td style="color:var(--text-hint);font-size:11px;">↳ Actual</td><td></td>';
-    FY_MONTHS.forEach(month => {
-      const aAmt = actualMap[client+'||'+month] || 0;
-      rowActual += aAmt; actualTotals[month] += aAmt;
-      html += '<td style="color:var(--text-muted);">' + (aAmt ? '₹' + fmtNum(aAmt) : '—') + '</td>';
-    });
-    html += '<td style="color:var(--text-muted);">₹' + fmtNum(rowActual) + '</td></tr>';
-
-    if (showForecast) {
-      // Pipeline row
-      html += '<tr class="row-actual"><td style="color:var(--text-hint);font-size:11px;">↳ Pipeline</td><td></td>';
-      FY_MONTHS.forEach(month => {
-        const pAmt = pipelineMap[client+'|'+(project||'')+'|'+month] || 0;
-        rowPipeline += pAmt; pipelineTotals[month] += pAmt;
-        html += '<td style="color:var(--primary);">' + (pAmt ? '₹' + fmtNum(pAmt) : '—') + '</td>';
-      });
-      html += '<td style="color:var(--primary);">₹' + fmtNum(rowPipeline) + '</td></tr>';
-
-      // Forecast total row
-      html += '<tr class="row-actual"><td style="color:var(--text-hint);font-size:11px;font-weight:600;">↳ Forecast</td><td></td>';
-      FY_MONTHS.forEach(month => {
-        const aAmt = actualMap[client+'||'+month] || 0;
-        const pAmt = pipelineMap[client+'|'+(project||'')+'|'+month] || 0;
-        const forecast = aAmt + pAmt;
-        html += '<td style="font-weight:600;">' + (forecast ? '₹' + fmtNum(forecast) : '—') + '</td>';
-      });
-      html += '<td style="font-weight:600;">₹' + fmtNum(rowActual + rowPipeline) + '</td></tr>';
-    }
-
-    // Variance row (forecast vs budget if showForecast, else actual vs budget)
-    html += '<tr class="row-variance"><td style="color:var(--text-hint);font-size:11px;">↳ Variance</td><td></td>';
-    FY_MONTHS.forEach(month => {
-      const bAmt = budgetMap[client+'|'+(project||'')+'|'+month] || 0;
-      const aAmt = actualMap[client+'||'+month] || 0;
-      const pAmt = showForecast ? (pipelineMap[client+'|'+(project||'')+'|'+month] || 0) : 0;
-      const compare = aAmt + pAmt;
-      const diff = compare - bAmt;
-      const cls = !bAmt ? '' : diff >= 0 ? 'var-good' : Math.abs(diff)/bAmt < 0.1 ? 'var-warn' : 'var-bad';
-      html += '<td class="' + cls + '">' + (bAmt || compare ? (diff >= 0 ? '+' : '') + '₹' + fmtNum(diff) : '—') + '</td>';
-    });
-    const totalCompare = rowActual + (showForecast ? rowPipeline : 0);
-    const totalDiff = totalCompare - rowBudget;
-    html += '<td class="' + (totalDiff >= 0 ? 'var-good' : 'var-bad') + '">' + (totalDiff >= 0 ? '+' : '') + '₹' + fmtNum(totalDiff) + '</td></tr>';
+    grandTotal += rowTotal;
+    html += '<td><strong>₹' + fmtNum(rowTotal) + '</strong></td></tr>';
   });
 
   // Totals row
   html += '<tr class="row-total"><td colspan="2">TOTAL</td>';
-  let grandBudget = 0, grandActual = 0, grandPipeline = 0;
-  FY_MONTHS.forEach(month => {
-    grandBudget += budgetTotals[month];
-    grandActual += actualTotals[month];
-    grandPipeline += pipelineTotals[month];
-    const forecast = grandActual + (showForecast ? grandPipeline : 0);
-    html += '<td>B: ₹' + fmtNum(budgetTotals[month]) +
-      '<br><span style="font-size:10px;font-weight:400;color:var(--text-muted);">A: ₹' + fmtNum(actualTotals[month]) + '</span>' +
-      (showForecast ? '<br><span style="font-size:10px;font-weight:400;color:var(--primary);">P: ₹' + fmtNum(pipelineTotals[month]) + '</span>' : '') +
-      '</td>';
-  });
-  html += '<td>B: ₹' + fmtNum(grandBudget) +
-    '<br><span style="font-size:10px;font-weight:400;color:var(--text-muted);">A: ₹' + fmtNum(grandActual) + '</span>' +
-    (showForecast ? '<br><span style="font-size:10px;font-weight:400;color:var(--primary);">P: ₹' + fmtNum(grandPipeline) + '</span>' : '') +
-    '</td></tr></tbody></table>';
-
+  FY_MONTHS.forEach(m => { html += '<td>₹' + fmtNum(colTotals[m]) + '</td>'; });
+  html += '<td>₹' + fmtNum(grandTotal) + '</td></tr>';
+  html += '</tbody></table>';
+  html += '<button class="btn btn-sm" onclick="addBudgetIncomeRow()" style="margin-top:12px;">+ Add Row</button>';
   container.innerHTML = html;
 }
 
-// ── EXPENSE MATRIX ──────────────────────────────────────
-function renderExpenseBudgetMatrix(container) {
+function renderExpenseBudgetEntry(container) {
   const budgetMap = {};
   DATA.budgetExpense.forEach(r => {
-    const key = (r.Category||'') + '|' + (r.Subcategory||'') + '|' + r.Month;
-    budgetMap[key] = parseFloat(r.BudgetAmount || 0);
+    budgetMap[(r.Category||'') + '|' + (r.Subcategory||'') + '|' + r.Month] = parseFloat(r.BudgetAmount || 0);
   });
 
-  // Actuals from expenses
-  const actualMap = {};
-  DATA.expenses.forEach(e => {
-    const month = toMonthKey(e.Date);
-    if (!FY_MONTHS.includes(month)) return;
-    const key = (e.Category||'') + '|' + (e.Subcategory||'') + '|' + month;
-    actualMap[key] = (actualMap[key] || 0) + expenseBaseInINR(e);
-  });
-
-  // Unique category+subcategory rows
   const rowKeys = new Set();
   DATA.budgetExpense.forEach(r => rowKeys.add((r.Category||'') + '|' + (r.Subcategory||'')));
-  DATA.expenses.forEach(e => {
-    const month = toMonthKey(e.Date);
-    if (FY_MONTHS.includes(month)) rowKeys.add((e.Category||'') + '|' + (e.Subcategory||''));
-  });
 
   const rows = [...rowKeys].sort();
 
   if (!rows.length) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>No expense budget data yet. Upload a budget using the ↑ Upload Expense Budget button.</p></div>';
+    container.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>No expense budget yet. Upload using the ↑ Upload Expense Budget button, or add a row below.</p><button class="btn btn-primary" onclick="addBudgetExpenseRow()" style="margin-top:12px;">+ Add Category Row</button></div>';
     return;
   }
 
-  const budgetTotals = {}, actualTotals = {};
-  FY_MONTHS.forEach(m => { budgetTotals[m] = 0; actualTotals[m] = 0; });
-
   let html = '<table class="budget-matrix"><thead><tr>' +
-    '<th style="min-width:140px;">Category</th>' +
-    '<th style="min-width:140px;">Subcategory</th>' +
+    '<th style="min-width:160px;position:sticky;left:0;z-index:3;background:var(--primary);">Category</th>' +
+    '<th style="min-width:140px;position:sticky;left:160px;z-index:3;background:var(--primary);">Subcategory</th>' +
     MONTH_LABELS.map(m => '<th>' + m + '</th>').join('') +
     '<th>Total</th></tr></thead><tbody>';
 
+  let grandTotal = 0;
+  const colTotals = {};
+  FY_MONTHS.forEach(m => colTotals[m] = 0);
+
   rows.forEach(rowKey => {
     const [cat, subcat] = rowKey.split('|');
-    let rowBudgetTotal = 0, rowActualTotal = 0;
-
-    html += '<tr>';
-    html += '<td>' + (cat || '—') + '</td>';
-    html += '<td>' + (subcat || '—') + '</td>';
+    let rowTotal = 0;
+    html += '<tr><td>' + (cat||'—') + '</td><td style="color:var(--text-muted);">' + (subcat||'—') + '</td>';
     FY_MONTHS.forEach(month => {
-      const bKey = rowKey + '|' + month;
-      const bAmt = budgetMap[bKey] || 0;
-      rowBudgetTotal += bAmt;
-      budgetTotals[month] += bAmt;
-      html += '<td>' +
-        '<span class="budget-cell" onclick="startEditBudget(this,\'' + encodeURIComponent(rowKey) + '\',\'' + month + '\',\'expense\')" ' +
-        'data-val="' + bAmt + '">' +
-        (bAmt ? '₹' + fmtNum(bAmt) : '<span style="color:var(--text-hint);">—</span>') +
-        '</span></td>';
+      const amt = budgetMap[rowKey + '|' + month] || 0;
+      rowTotal += amt; colTotals[month] += amt;
+      html += '<td><span class="budget-cell" onclick="startEditBudget(this,\'' + encodeURIComponent(rowKey) + '\',\'' + month + '\',\'expense\')" data-val="' + amt + '">' +
+        (amt ? '₹' + fmtNum(amt) : '<span style="color:var(--text-hint);">—</span>') + '</span></td>';
     });
-    html += '<td><strong>₹' + fmtNum(rowBudgetTotal) + '</strong></td>';
-    html += '</tr>';
-
-    // Actual row
-    html += '<tr class="row-actual"><td style="color:var(--text-hint);font-size:11px;">↳ Actual</td><td></td>';
-    FY_MONTHS.forEach(month => {
-      const aAmt = actualMap[rowKey + '|' + month] || 0;
-      rowActualTotal += aAmt;
-      actualTotals[month] += aAmt;
-      html += '<td style="color:var(--text-muted);">' + (aAmt ? '₹' + fmtNum(aAmt) : '—') + '</td>';
-    });
-    html += '<td style="color:var(--text-muted);">₹' + fmtNum(rowActualTotal) + '</td></tr>';
-
-    // Variance
-    html += '<tr class="row-variance"><td style="color:var(--text-hint);font-size:11px;">↳ Variance</td><td></td>';
-    FY_MONTHS.forEach(month => {
-      const bAmt = budgetMap[rowKey + '|' + month] || 0;
-      const aAmt = actualMap[rowKey + '|' + month] || 0;
-      const diff = bAmt - aAmt; // positive = under budget (good for expense)
-      const cls = !bAmt ? '' : diff >= 0 ? 'var-good' : Math.abs(diff)/bAmt < 0.1 ? 'var-warn' : 'var-bad';
-      html += '<td class="' + cls + '">' + (bAmt || aAmt ? (diff >= 0 ? '+' : '') + '₹' + fmtNum(diff) : '—') + '</td>';
-    });
-    const totalDiff = rowBudgetTotal - rowActualTotal;
-    html += '<td class="' + (totalDiff >= 0 ? 'var-good' : 'var-bad') + '">' + (totalDiff >= 0 ? '+' : '') + '₹' + fmtNum(totalDiff) + '</td></tr>';
+    grandTotal += rowTotal;
+    html += '<td><strong>₹' + fmtNum(rowTotal) + '</strong></td></tr>';
   });
 
-  // Totals
   html += '<tr class="row-total"><td colspan="2">TOTAL</td>';
-  let grandBudget = 0, grandActual = 0;
-  FY_MONTHS.forEach(month => {
-    grandBudget += budgetTotals[month];
-    grandActual += actualTotals[month];
-    html += '<td>₹' + fmtNum(budgetTotals[month]) + '<br><span style="font-size:10px;font-weight:400;color:var(--text-muted);">Act: ₹' + fmtNum(actualTotals[month]) + '</span></td>';
-  });
-  html += '<td>₹' + fmtNum(grandBudget) + '<br><span style="font-size:10px;font-weight:400;color:var(--text-muted);">Act: ₹' + fmtNum(grandActual) + '</span></td>';
-  html += '</tr></tbody></table>';
-
+  FY_MONTHS.forEach(m => { html += '<td>₹' + fmtNum(colTotals[m]) + '</td>'; });
+  html += '<td>₹' + fmtNum(grandTotal) + '</td></tr>';
+  html += '</tbody></table>';
+  html += '<button class="btn btn-sm" onclick="addBudgetExpenseRow()" style="margin-top:12px;">+ Add Row</button>';
   container.innerHTML = html;
+}
+
+// Add new row via prompt
+async function addBudgetIncomeRow() {
+  const client = prompt('Client name:');
+  if (!client) return;
+  const project = prompt('Project name (leave blank if none):') || '';
+  // Check if row already exists
+  const exists = DATA.budgetIncome.some(r => r.Client === client && (r.Project||'') === project);
+  if (exists) { showToast('This client/project combination already exists'); return; }
+  // Add one placeholder entry to create the row
+  await appendRow(SHEETS.budgetIncome, [genId(), client, project, '2026-04', 0]);
+  await loadAllData();
+  renderBudget();
+  showToast('Row added — click any cell to enter budget amounts');
+}
+
+async function addBudgetExpenseRow() {
+  const cats = [...new Set(DATA.categories.map(c => c.Category))].sort();
+  const cat = prompt('Category:\n' + cats.join(', '));
+  if (!cat) return;
+  const subcats = DATA.categories.filter(c => c.Category === cat).map(c => c.Subcategory).sort();
+  const subcat = prompt('Subcategory:\n' + subcats.join(', '));
+  if (!subcat) return;
+  const exists = DATA.budgetExpense.some(r => r.Category === cat && r.Subcategory === subcat);
+  if (exists) { showToast('This category/subcategory combination already exists'); return; }
+  await appendRow(SHEETS.budgetExpense, [genId(), cat, subcat, '2026-04', 0]);
+  await loadAllData();
+  renderBudget();
+  showToast('Row added — click any cell to enter budget amounts');
 }
 
 // ── INLINE CELL EDITING ─────────────────────────────────
 function startEditBudget(span, encodedRowKey, month, type) {
-  // Save any currently editing cell first
-  if (editingBudgetCell) {
-    commitBudgetEdit();
-  }
-
+  if (editingBudgetCell) commitBudgetEdit();
   const rowKey = decodeURIComponent(encodedRowKey);
   const currentVal = parseFloat(span.dataset.val) || 0;
   editingBudgetCell = { span, rowKey, month, type, originalVal: currentVal };
-
   span.innerHTML = '<input type="number" value="' + (currentVal || '') +
-    '" placeholder="0" min="0" step="100" ' +
+    '" placeholder="0" min="0" step="1000" ' +
     'onblur="commitBudgetEdit()" ' +
     'onkeydown="if(event.key===\'Enter\'){commitBudgetEdit()} if(event.key===\'Escape\'){cancelBudgetEdit()}">';
   const input = span.querySelector('input');
-  input.focus();
-  input.select();
+  input.focus(); input.select();
 }
 
 async function commitBudgetEdit() {
   if (!editingBudgetCell) return;
   const { span, rowKey, month, type, originalVal } = editingBudgetCell;
   editingBudgetCell = null;
-
   const input = span.querySelector('input');
   if (!input) return;
   const newVal = parseFloat(input.value) || 0;
-
-  // Restore display
   span.innerHTML = newVal ? '₹' + fmtNum(newVal) : '<span style="color:var(--text-hint);">—</span>';
   span.dataset.val = newVal;
+  if (newVal === originalVal) return;
 
-  if (newVal === originalVal) return; // no change
-
-  // Save to sheet
   const sheet = type === 'income' ? SHEETS.budgetIncome : SHEETS.budgetExpense;
   const dataArr = type === 'income' ? DATA.budgetIncome : DATA.budgetExpense;
 
-  let parts, client, project, cat, subcat;
   if (type === 'income') {
-    parts = rowKey.split('|');
-    client = parts[0]; project = parts[1] || '';
-    const existing = dataArr.find(r => r.Client === client && r.Project === project && r.Month === month);
+    const [client, project] = rowKey.split('|');
+    const existing = dataArr.find(r => r.Client === client && (r.Project||'') === (project||'') && r.Month === month);
     if (existing) {
-      // Update existing row
-      const idx = dataArr.indexOf(existing);
-      const row = [existing.ID, client, project, month, newVal];
-      await updateRow(sheet, idx, row);
+      await updateRow(sheet, dataArr.indexOf(existing), [existing.ID, client, project||'', month, newVal]);
     } else {
-      // New row
-      await appendRow(sheet, [genId(), client, project, month, newVal]);
+      await appendRow(sheet, [genId(), client, project||'', month, newVal]);
     }
   } else {
-    parts = rowKey.split('|');
-    cat = parts[0]; subcat = parts[1] || '';
-    const existing = dataArr.find(r => r.Category === cat && r.Subcategory === subcat && r.Month === month);
+    const [cat, subcat] = rowKey.split('|');
+    const existing = dataArr.find(r => r.Category === cat && (r.Subcategory||'') === (subcat||'') && r.Month === month);
     if (existing) {
-      const idx = dataArr.indexOf(existing);
-      await updateRow(sheet, idx, [existing.ID, cat, subcat, month, newVal]);
+      await updateRow(sheet, dataArr.indexOf(existing), [existing.ID, cat, subcat||'', month, newVal]);
     } else {
-      await appendRow(sheet, [genId(), cat, subcat, month, newVal]);
+      await appendRow(sheet, [genId(), cat, subcat||'', month, newVal]);
     }
   }
-
   await loadAllData();
-  // No full re-render — just refresh totals row quietly
 }
 
 function cancelBudgetEdit() {
@@ -6238,7 +6170,177 @@ function cancelBudgetEdit() {
   span.innerHTML = originalVal ? '₹' + fmtNum(originalVal) : '<span style="color:var(--text-hint);">—</span>';
 }
 
-// ── UPLOAD BUDGET FROM EXCEL ────────────────────────────
+// ── COMPARISON PAGE ─────────────────────────────────────
+let currentCompareTab = 'income';
+
+function renderComparison() {
+  renderCompareMatrix(currentCompareTab);
+}
+
+function switchCompareTab(tab, el) {
+  currentCompareTab = tab;
+  document.querySelectorAll('.compare-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderCompareMatrix(tab);
+}
+
+function renderCompareMatrix(tab) {
+  const container = document.getElementById('compare-matrix-container');
+  if (!container) return;
+  tab === 'income' ? renderIncomeComparison(container) : renderExpenseComparison(container);
+}
+
+function renderIncomeComparison(container) {
+  const curMonth = currentMonthKey();
+  const inclFR = document.getElementById('compare-include-fr')?.checked || false;
+
+  // Budget map
+  const budgetMap = {};
+  DATA.budgetIncome.forEach(r => {
+    budgetMap[(r.Client||'') + '|' + (r.Project||'') + '|' + r.Month] = parseFloat(r.BudgetAmount || 0);
+  });
+
+  // Actual map — use ServiceMonth (skip if blank)
+  const actualMap = {};
+  DATA.invoices.forEach(i => {
+    if (!i.ServiceMonth || !FY_MONTHS.includes(i.ServiceMonth)) return;
+    const key = (i.ClientName||'') + '|' + (i.Project||'') + '|' + i.ServiceMonth;
+    actualMap[key] = (actualMap[key] || 0) + invoiceBaseInINR(i);
+  });
+
+  // FR map — past months only (ExpectedDate in past)
+  const frMap = {};
+  if (inclFR) {
+    DATA.receivables.forEach(r => {
+      const month = toMonthKey(r.ExpectedDate);
+      if (!month || !FY_MONTHS.includes(month) || month >= curMonth) return; // past only
+      const key = (r.ClientName||'') + '|' + (r.Project||'') + '|' + month;
+      frMap[key] = (frMap[key] || 0) + (parseFloat(r.Amount||0) * getRate(r.Currency||'INR'));
+    });
+  }
+
+  // Row keys from budget
+  const rowKeys = new Set();
+  DATA.budgetIncome.forEach(r => rowKeys.add((r.Client||'') + '|' + (r.Project||'')));
+  const rows = [...rowKeys].sort();
+
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-state"><p>No income budget data. Go to Budget page to enter data first.</p></div>';
+    return;
+  }
+
+  const colTotals = {}; // month → {budget, actual}
+  FY_MONTHS.forEach(m => colTotals[m] = { budget: 0, actual: 0, display: 0 });
+
+  let html = buildCompareTable(rows, 'Client', 'Project', FY_MONTHS, curMonth, (rowKey, month) => {
+    const isPast = month < curMonth;
+    const budget = budgetMap[rowKey + '|' + month] || 0;
+    const actual = (actualMap[rowKey + '|' + month] || 0) + (frMap[rowKey + '|' + month] || 0);
+    const display = isPast ? actual : budget;
+    colTotals[month].budget += budget;
+    colTotals[month].actual += actual;
+    colTotals[month].display += display;
+    return { isPast, budget, actual, display };
+  });
+
+  container.innerHTML = html;
+}
+
+function renderExpenseComparison(container) {
+  const curMonth = currentMonthKey();
+
+  const budgetMap = {};
+  DATA.budgetExpense.forEach(r => {
+    budgetMap[(r.Category||'') + '|' + (r.Subcategory||'') + '|' + r.Month] = parseFloat(r.BudgetAmount || 0);
+  });
+
+  const actualMap = {};
+  DATA.expenses.forEach(e => {
+    const month = toMonthKey(e.Date);
+    if (!FY_MONTHS.includes(month)) return;
+    const key = (e.Category||'') + '|' + (e.Subcategory||'') + '|' + month;
+    actualMap[key] = (actualMap[key] || 0) + expenseBaseInINR(e);
+  });
+
+  const rowKeys = new Set();
+  DATA.budgetExpense.forEach(r => rowKeys.add((r.Category||'') + '|' + (r.Subcategory||'')));
+  const rows = [...rowKeys].sort();
+
+  if (!rows.length) {
+    container.innerHTML = '<div class="empty-state"><p>No expense budget data. Go to Budget page to enter data first.</p></div>';
+    return;
+  }
+
+  container.innerHTML = buildCompareTable(rows, 'Category', 'Subcategory', FY_MONTHS, curMonth, (rowKey, month) => {
+    const isPast = month < curMonth;
+    const budget = budgetMap[rowKey + '|' + month] || 0;
+    const actual = actualMap[rowKey + '|' + month] || 0;
+    const display = isPast ? actual : budget;
+    return { isPast, budget, actual, display };
+  });
+}
+
+function buildCompareTable(rows, col1Label, col2Label, months, curMonth, getCellData) {
+  let html = '<table class="budget-matrix"><thead><tr>' +
+    '<th style="min-width:160px;position:sticky;left:0;z-index:3;background:var(--primary);">' + col1Label + '</th>' +
+    '<th style="min-width:140px;position:sticky;left:160px;z-index:3;background:var(--primary);">' + col2Label + '</th>' +
+    months.map((m, i) => {
+      const isPast = m < curMonth;
+      const isCur = m === curMonth;
+      const style = isPast ? '' : isCur ? 'background:#1a5fa0;' : 'background:#2470b5;opacity:0.85;';
+      const label = MONTH_LABELS[i] + (isPast ? '' : isCur ? ' ●' : '');
+      return '<th style="' + style + '">' + label + '</th>';
+    }).join('') +
+    '<th>Total</th></tr></thead><tbody>';
+
+  // Legend
+  html += '<tr style="background:var(--bg-secondary);"><td colspan="2" style="font-size:11px;color:var(--text-muted);font-style:italic;">Past months = Actual &nbsp;|&nbsp; ● Current & future = Budget &nbsp;|&nbsp; 🟢 ≥ budget &nbsp; 🟡 within 10% &nbsp; 🔴 below</td>' +
+    '<td colspan="' + (months.length + 1) + '"></td></tr>';
+
+  let grandTotal = 0;
+  const colTotals = {};
+  months.forEach(m => colTotals[m] = 0);
+
+  rows.forEach(rowKey => {
+    const parts = rowKey.split('|');
+    let rowTotal = 0;
+    html += '<tr><td><strong style="font-weight:500;">' + (parts[0]||'—') + '</strong></td>' +
+            '<td style="color:var(--text-muted);">' + (parts[1]||'—') + '</td>';
+
+    months.forEach(month => {
+      const { isPast, budget, actual, display } = getCellData(rowKey, month);
+      rowTotal += display;
+      colTotals[month] += display;
+
+      let cellStyle = '';
+      let tooltip = '';
+      if (isPast && budget > 0) {
+        const ratio = actual / budget;
+        if (ratio >= 1) cellStyle = 'color:var(--success);font-weight:500;';
+        else if (ratio >= 0.9) cellStyle = 'color:var(--warning);font-weight:500;';
+        else cellStyle = 'color:var(--danger);font-weight:500;';
+        tooltip = 'Budget: ₹' + fmtNum(budget) + ' | Actual: ₹' + fmtNum(actual);
+      } else if (!isPast) {
+        cellStyle = 'color:var(--text-muted);';
+      }
+
+      html += '<td title="' + tooltip + '" style="' + cellStyle + '">' +
+        (display ? '₹' + fmtNum(display) : '<span style="color:var(--text-hint);">—</span>') + '</td>';
+    });
+
+    grandTotal += rowTotal;
+    html += '<td><strong>₹' + fmtNum(rowTotal) + '</strong></td></tr>';
+  });
+
+  // Totals row
+  html += '<tr class="row-total"><td colspan="2">TOTAL</td>';
+  months.forEach(m => { html += '<td>₹' + fmtNum(colTotals[m]) + '</td>'; });
+  html += '<td>₹' + fmtNum(grandTotal) + '</td></tr></tbody></table>';
+
+  return html;
+}
+
+// ── UPLOAD BUDGET ───────────────────────────────────────
 function uploadBudget(type) {
   budgetUploadType = type;
   const inp = document.getElementById('budgetFileInput');
@@ -6249,106 +6351,59 @@ async function handleBudgetUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
   showToast('Parsing budget file...');
-
   try {
     const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
     const ws = workbook.Sheets[workbook.SheetNames[0]];
     const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-
     if (raw.length < 2) { showToast('File appears empty'); return; }
 
-    // Row 0 = headers: col0=Client/Category, col1=Project/Subcategory, col2..=months
     const headerRow = raw[0];
-    // Find month columns — they should match MONTH_LABELS or YYYY-MM format
-    const monthCols = []; // [{colIdx, monthKey}]
+    const monthCols = [];
     for (let c = 2; c < headerRow.length; c++) {
       const h = String(headerRow[c] || '').trim();
-      // Try matching "Apr 26", "Apr-26", "2026-04" etc.
       const labelIdx = MONTH_LABELS.findIndex(l => l.toLowerCase().replace(/[^a-z0-9]/g,'') === h.toLowerCase().replace(/[^a-z0-9]/g,''));
-      if (labelIdx >= 0) {
-        monthCols.push({ colIdx: c, monthKey: FY_MONTHS[labelIdx] });
-      } else if (FY_MONTHS.includes(h)) {
-        monthCols.push({ colIdx: c, monthKey: h });
-      }
+      if (labelIdx >= 0) monthCols.push({ colIdx: c, monthKey: FY_MONTHS[labelIdx] });
+      else if (FY_MONTHS.includes(h)) monthCols.push({ colIdx: c, monthKey: h });
     }
-
-    if (!monthCols.length) { showToast('Could not find month columns — check template format'); return; }
+    if (!monthCols.length) { showToast('Could not find month columns'); return; }
 
     const sheet = budgetUploadType === 'income' ? SHEETS.budgetIncome : SHEETS.budgetExpense;
     let saved = 0;
-
     for (let r = 1; r < raw.length; r++) {
       const row = raw[r];
       const col0 = String(row[0] || '').trim();
       const col1 = String(row[1] || '').trim();
       if (!col0) continue;
-
       for (const { colIdx, monthKey } of monthCols) {
         const val = parseFloat(String(row[colIdx] || '').replace(/[,₹]/g,'')) || 0;
         if (!val) continue;
-
-        if (budgetUploadType === 'income') {
-          await appendRow(sheet, [genId(), col0, col1, monthKey, val]);
-        } else {
-          await appendRow(sheet, [genId(), col0, col1, monthKey, val]);
-        }
+        await appendRow(sheet, [genId(), col0, col1, monthKey, val]);
         saved++;
       }
     }
-
     await loadAllData();
     renderBudget();
-    showToast(saved + ' budget values uploaded successfully');
-  } catch(e) {
-    showToast('Error parsing file: ' + e.message);
-    console.error(e);
-  }
+    showToast(saved + ' budget values uploaded');
+  } catch(e) { showToast('Error: ' + e.message); console.error(e); }
 }
 
-// ── DOWNLOAD BUDGET TEMPLATE ────────────────────────────
 function downloadBudgetTemplate(type) {
-  const wb = XLSX.utils.book_new();
   const isIncome = type === 'income';
-
-  const headers = isIncome
-    ? ['Client', 'Project', ...MONTH_LABELS]
-    : ['Category', 'Subcategory', ...MONTH_LABELS];
-
+  const wb = XLSX.utils.book_new();
+  const headers = isIncome ? ['Client', 'Project', ...MONTH_LABELS] : ['Category', 'Subcategory', ...MONTH_LABELS];
   const sample = isIncome
-    ? [
-        ['Kushals Retail Pvt. Ltd.', 'DiTOS ERP', ...Array(12).fill(500000)],
-        ['OmniChannel Health', 'Product Development', ...Array(12).fill(300000)],
-        ['Strides Pharma', 'Power BI', ...Array(12).fill(200000)],
-      ]
-    : [
-        ['Personnel', 'Salary', ...Array(12).fill(750000)],
-        ['Infrastructure', 'Cloud', ...Array(12).fill(80000)],
-        ['Office', 'Rent', ...Array(12).fill(91800)],
-      ];
-
-  const wsData = [headers, ...sample];
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // Style header row width
+    ? [['Kushals Retail Pvt. Ltd.', 'DiTOS ERP', ...Array(12).fill(500000)],
+       ['OmniChannel Health', 'Product Development', ...Array(12).fill(300000)]]
+    : [['Personnel', 'Salary', ...Array(12).fill(750000)],
+       ['Infrastructure', 'Cloud', ...Array(12).fill(80000)]];
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...sample]);
   ws['!cols'] = [{ wch: 30 }, { wch: 28 }, ...Array(12).fill({ wch: 12 })];
   XLSX.utils.book_append_sheet(wb, ws, isIncome ? 'IncomeBudget' : 'ExpenseBudget');
-
-  // Instructions sheet
-  const instrData = [
-    ['Instructions'],
-    [''],
-    ['1. Col A: ' + (isIncome ? 'Client name (must match your Clients sheet)' : 'Category (must match your expense categories)')],
-    ['2. Col B: ' + (isIncome ? 'Project name (free text, can be blank)' : 'Subcategory (must match your expense subcategories)')],
-    ['3. Cols C onwards: Enter budget amount in INR for each month'],
-    ['4. Leave blank (or 0) for months with no budget'],
-    ['5. Do not add or remove columns — keep all 12 month columns'],
-    ['6. You can add as many rows as needed'],
-  ];
-  const wsInstr = XLSX.utils.aoa_to_sheet(instrData);
-  wsInstr['!cols'] = [{ wch: 75 }];
-  XLSX.utils.book_append_sheet(wb, wsInstr, 'Instructions');
-
+  const wsI = XLSX.utils.aoa_to_sheet([['1. One row per ' + (isIncome ? 'Client/Project' : 'Category/Subcategory') + ' combination'],
+    ['2. Enter budget amount in INR for each month'], ['3. Leave blank for months with no budget']]);
+  wsI['!cols'] = [{ wch: 75 }];
+  XLSX.utils.book_append_sheet(wb, wsI, 'Instructions');
   XLSX.writeFile(wb, (isIncome ? 'IncomeBudget' : 'ExpenseBudget') + '_Template.xlsx');
 }
 
