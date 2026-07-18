@@ -2501,8 +2501,8 @@ const PAGE_TITLES = {
 function getPageActions(page) {
   const addBtns = {
     clients: '<button class="btn btn-primary" onclick="openClientModal()">+ Add Client</button>',
-    invoices: '<button class="btn btn-primary" onclick="openInvoiceModal()">+ Add Invoice</button>',
-    expenses: '<button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button>',
+    invoices: '<button class="btn btn-primary" onclick="openInvoiceModal()">+ Add Invoice</button>' + '<button class="btn" onclick="exportInvoicesToBudgetFormat()">&#8595; Export to Budget Format</button>',
+    expenses: '<button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button>' + '<button class="btn" onclick="exportExpensesToBudgetFormat()">&#8595; Export to Budget Format</button>',
     payments: '<button class="btn btn-primary" onclick="openPaymentModal()">+ Add Payment</button>',
     receivables: '<button class="btn btn-primary" onclick="openReceivableModal()">+ Add Receivable</button>',
     loans: '<button class="btn btn-primary" onclick="openLoanModal()">+ Add Loan</button>',
@@ -3483,7 +3483,7 @@ function renderInvoices() {
       '<td><span style="font-weight:500;font-size:12px;">' + i.InvoiceNumber + '</span>' + (i.IsExport === 'Yes' ? ' <span class="badge badge-warning" style="font-size:10px;">Export</span>' : '') + '</td>' +
       '<td style="color:var(--text-muted);font-size:12px;">' + fmtDate(i.Date) + '</td>' +
       '<td>' + i.ClientName + (i.Project ? '<br><span style="font-size:11px;color:var(--text-muted);">' + i.Project + '</span>' : '') +
-        (i.ServiceMonth ? '<br><span style="font-size:10px;color:var(--primary);">Svc: ' + MONTH_LABELS[FY_MONTHS.indexOf(i.ServiceMonth)] + '</span>' : '') + '</td>' +
+        (i.ServiceMonth ? '<br><span style="font-size:10px;color:var(--primary);">Svc: ' + formatServiceMonth(i.ServiceMonth) + '</span>' : '') + '</td>' +
       '<td><span class="badge badge-neutral">' + i.Currency + '</span></td>' +
       '<td class="text-right">' + fmtNum(i.BaseAmount) + '</td>' +
       '<td class="text-right" style="color:var(--text-muted);">' + fmtNum(i.TotalTax) + '</td>' +
@@ -4774,6 +4774,18 @@ function parseLocalDate(d) {
     return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
   }
   return new Date(str);
+}
+
+function formatServiceMonth(yyyymm) {
+  if (!yyyymm) return '';
+  const idx = FY_MONTHS.indexOf(yyyymm);
+  if (idx >= 0) return MONTH_LABELS[idx];
+  // Handle months outside current FY (e.g. 2026-03 → Mar 26)
+  try {
+    const [year, month] = yyyymm.split('-');
+    const d = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+  } catch { return yyyymm; }
 }
 
 function fmtDate(d) {
@@ -6585,6 +6597,118 @@ function downloadBudgetTemplate(type) {
   wsI['!cols'] = [{ wch: 75 }];
   XLSX.utils.book_append_sheet(wb, wsI, 'Instructions');
   XLSX.writeFile(wb, (isIncome ? 'IncomeBudget' : 'ExpenseBudget') + '_Template.xlsx');
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT TO BUDGET FORMAT
+// ═══════════════════════════════════════════════════════
+function exportInvoicesToBudgetFormat() {
+  // Only invoices with ServiceMonth set and within current FY
+  const invoices = DATA.invoices.filter(i => i.ServiceMonth && FY_MONTHS.includes(i.ServiceMonth));
+
+  if (!invoices.length) {
+    showToast('No invoices with Service Month set for current FY');
+    return;
+  }
+
+  // Group by Client + Project + ServiceMonth → sum base INR
+  const dataMap = {};
+  const rowKeys = new Set();
+  invoices.forEach(i => {
+    const rowKey = (i.ClientName||'') + '|' + (i.Project||'');
+    const key = rowKey + '|' + i.ServiceMonth;
+    dataMap[key] = (dataMap[key] || 0) + invoiceBaseInINR(i);
+    rowKeys.add(rowKey);
+  });
+
+  const rows = [...rowKeys].sort();
+
+  // Build matrix: headers + data rows
+  const headers = ['Client', 'Project', ...MONTH_LABELS];
+  const dataRows = rows.map(rowKey => {
+    const [client, project] = rowKey.split('|');
+    const monthValues = FY_MONTHS.map(month => {
+      const val = dataMap[rowKey + '|' + month] || 0;
+      return val ? Math.round(val) : '';
+    });
+    return [client, project || '', ...monthValues];
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+  ws['!cols'] = [{ wch: 30 }, { wch: 28 }, ...Array(12).fill({ wch: 12 })];
+  XLSX.utils.book_append_sheet(wb, ws, 'IncomeBudget');
+
+  // Instructions
+  const wsI = XLSX.utils.aoa_to_sheet([
+    ['This file shows actual invoiced amounts grouped by Client / Project / Service Month.'],
+    ['Review the numbers, adjust future months as needed, then upload via Budget → ↑ Upload Income Budget.'],
+    ['Only months with invoices are populated — fill in blank months with your budget estimates.'],
+  ]);
+  wsI['!cols'] = [{ wch: 80 }];
+  XLSX.utils.book_append_sheet(wb, wsI, 'Instructions');
+
+  XLSX.writeFile(wb, 'InvoiceTrend_BudgetFormat.xlsx');
+  showToast('Downloaded: InvoiceTrend_BudgetFormat.xlsx');
+}
+
+function exportExpensesToBudgetFormat() {
+  // All expenses in current FY
+  const fyStart = new Date(2026, 3, 1); // Apr 2026
+  const fyEnd = new Date(2027, 2, 31);  // Mar 2027
+  const expenses = DATA.expenses.filter(e => {
+    const d = parseLocalDate(e.Date);
+    return d >= fyStart && d <= fyEnd;
+  });
+
+  if (!expenses.length) {
+    showToast('No expenses found for current FY');
+    return;
+  }
+
+  // Group by Category + Subcategory + month → sum base amount
+  const dataMap = {};
+  const rowKeys = new Set();
+  expenses.forEach(e => {
+    const month = toMonthKey(e.Date);
+    if (!FY_MONTHS.includes(month)) return;
+    const rowKey = (e.Category||'') + '|' + (e.Subcategory||'');
+    const key = rowKey + '|' + month;
+    dataMap[key] = (dataMap[key] || 0) + expenseBaseInINR(e);
+    rowKeys.add(rowKey);
+  });
+
+  // Use all categories as rows (same as budget page) — not just ones with actuals
+  const allCatKeys = DATA.categories
+    .filter(c => c.Category && c.Subcategory)
+    .sort((a, b) => a.Category.localeCompare(b.Category) || a.Subcategory.localeCompare(b.Subcategory))
+    .map(c => c.Category + '|' + c.Subcategory);
+
+  const headers = ['Category', 'Subcategory', ...MONTH_LABELS];
+  const dataRows = allCatKeys.map(rowKey => {
+    const [cat, subcat] = rowKey.split('|');
+    const monthValues = FY_MONTHS.map(month => {
+      const val = dataMap[rowKey + '|' + month] || 0;
+      return val ? Math.round(val) : '';
+    });
+    return [cat, subcat, ...monthValues];
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+  ws['!cols'] = [{ wch: 28 }, { wch: 28 }, ...Array(12).fill({ wch: 12 })];
+  XLSX.utils.book_append_sheet(wb, ws, 'ExpenseBudget');
+
+  const wsI = XLSX.utils.aoa_to_sheet([
+    ['This file shows actual expenses grouped by Category / Subcategory / Month.'],
+    ['All categories are included — blank months mean no expense was recorded.'],
+    ['Adjust future months with your budget estimates, then upload via Budget → ↑ Upload Expense Budget.'],
+  ]);
+  wsI['!cols'] = [{ wch: 80 }];
+  XLSX.utils.book_append_sheet(wb, wsI, 'Instructions');
+
+  XLSX.writeFile(wb, 'ExpenseTrend_BudgetFormat.xlsx');
+  showToast('Downloaded: ExpenseTrend_BudgetFormat.xlsx');
 }
 
 // App ready
