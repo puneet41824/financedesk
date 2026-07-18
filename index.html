@@ -6397,15 +6397,17 @@ function renderIncomeComparison(container) {
     actualMap[key] = (actualMap[key] || 0) + invoiceBaseInINR(i);
   });
 
-  // FR map — past months only (ExpectedDate in past)
+  // FR map — past months + current month
   const frMap = {};
   if (inclFR) {
     DATA.receivables.forEach(r => {
       const month = toMonthKey(r.ExpectedDate);
-      if (!month || !FY_MONTHS.includes(month) || month >= curMonth) return; // past only
+      if (!month || !FY_MONTHS.includes(month) || month > curMonth) return; // past + current only
       const key = (r.ClientName||'') + '|' + (r.Project||'') + '|' + month;
       frMap[key] = (frMap[key] || 0) + (parseFloat(r.Amount||0) * getRate(r.Currency||'INR'));
     });
+    const frTotal = Object.values(frMap).reduce((s, v) => s + v, 0);
+    if (frTotal === 0) showToast('No Future Receivables found with past/current Expected Dates');
   }
 
   // Row keys from project master (active projects)
