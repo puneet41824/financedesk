@@ -2389,12 +2389,23 @@ async function updateRow(sheetName, rowIndex, rowData) {
   // rowIndex is 0-based data index, so sheet row = rowIndex + 2 (1 for header, 1 for 1-based)
   const sheetRow = rowIndex + 2;
   const colCount = rowData.length;
-  const endCol = String.fromCharCode(64 + colCount);
+  const endCol = colIndexToLetter(colCount);
   const range = `${sheetName}!A${sheetRow}:${endCol}${sheetRow}`;
   await sheetsRequest('PUT', `/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
     range: range,
     values: [rowData]
   });
+}
+
+function colIndexToLetter(n) {
+  // Convert 1-based column index to A, B, ..., Z, AA, AB, etc.
+  let result = '';
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    result = String.fromCharCode(65 + rem) + result;
+    n = Math.floor((n - 1) / 26);
+  }
+  return result;
 }
 
 async function deleteRow(sheetName, rowIndex) {
