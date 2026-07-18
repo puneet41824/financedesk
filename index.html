@@ -891,6 +891,9 @@
     <div class="nav-item" onclick="navigate('payments')">
       <span class="icon">🏦</span> Payments
     </div>
+    <div class="nav-item" onclick="navigate('creditcard')">
+      <span class="icon">🃏</span> Credit Card
+    </div>
   </div>
 
   <div class="sidebar-section">
@@ -1331,30 +1334,39 @@
       </div>
     </div>
 
+    <!-- CREDIT CARD -->
+    <div class="page" id="page-creditcard">
+      <div class="metrics-grid" id="cc-summary" style="margin-bottom:16px;"></div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Merchant</th><th>Category</th><th>Currency</th><th>Base Amt</th><th>GST</th><th>TDS</th><th>Net Payable</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="ccTable">
+              <tr><td colspan="10"><div class="empty-state"><p>Loading...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- OPERATIONS DASHBOARD -->
     <div class="page" id="page-operations">
-      <div class="kpi-grid" id="ops-kpis">
-        <div class="kpi-card">
-          <div class="kpi-label">Payments Pending Tagging</div>
-          <div class="kpi-number" id="kpi-untagged" style="color:var(--warning);">—</div>
-          <div class="kpi-sub">Both inward &amp; outward</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Invoices Unpaid</div>
-          <div class="kpi-number" id="kpi-inv-unpaid" style="color:var(--danger);">—</div>
-          <div class="kpi-sub" id="kpi-inv-amount">—</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Expenses Unpaid</div>
-          <div class="kpi-number" id="kpi-exp-unpaid" style="color:var(--danger);">—</div>
-          <div class="kpi-sub" id="kpi-exp-amount">—</div>
-        </div>
+      <div class="kpi-grid" id="ops-kpis" style="grid-template-columns:repeat(5,1fr);">
+        <div class="kpi-card"><div class="kpi-label">Pending Tagging</div><div class="kpi-number" id="kpi-untagged" style="color:var(--warning);">—</div><div class="kpi-sub">Inward &amp; outward</div></div>
+        <div class="kpi-card"><div class="kpi-label">Invoices Unpaid</div><div class="kpi-number" id="kpi-inv-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-inv-amount">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">Expenses Unpaid</div><div class="kpi-number" id="kpi-exp-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-exp-amount">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠ Expense Integrity</div><div class="kpi-number" id="kpi-exp-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Paid but no transactions</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠ Invoice Integrity</div><div class="kpi-number" id="kpi-inv-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Paid but no transactions</div></div>
       </div>
 
       <div class="ops-tabs">
         <div class="ops-tab active" onclick="switchOpsTab('tagging', this)">Pending Tagging</div>
         <div class="ops-tab" onclick="switchOpsTab('invoices', this)">Unpaid Invoices</div>
         <div class="ops-tab" onclick="switchOpsTab('expenses', this)">Unpaid Expenses</div>
+        <div class="ops-tab" onclick="switchOpsTab('exp-integrity', this)">⚠ Expense Integrity</div>
+        <div class="ops-tab" onclick="switchOpsTab('inv-integrity', this)">⚠ Invoice Integrity</div>
       </div>
 
       <div class="card" id="ops-table-container">
@@ -1694,6 +1706,48 @@
   </div>
 </div>
 
+<!-- CREDIT CARD MODAL -->
+<div class="modal-overlay" id="ccModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h3 id="ccModalTitle">Add CC Entry</h3>
+      <button class="btn btn-sm" onclick="closeModal('ccModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Date *</label><input type="date" id="cc-date"></div>
+        <div class="form-group"><label>Currency</label>
+          <select id="cc-currency" onchange="calcCC()"></select>
+        </div>
+        <div class="form-group full"><label>Merchant *</label><input type="text" id="cc-merchant" placeholder="Merchant name"></div>
+        <div class="form-group"><label>Category *</label>
+          <select id="cc-cat" onchange="onCCCatChange()"><option value="">Select category...</option></select>
+        </div>
+        <div class="form-group"><label>Subcategory *</label>
+          <select id="cc-subcat"><option value="">Select subcategory...</option></select>
+        </div>
+        <div class="form-group full"><label>Description</label><input type="text" id="cc-desc" placeholder="Optional details"></div>
+        <div class="form-group"><label>Base Amount *</label><input type="number" id="cc-amount" placeholder="0" min="0" oninput="calcCC()"></div>
+        <div class="form-group"><label>GST Rate (%)</label><input type="number" id="cc-gst" placeholder="0" min="0" value="0" oninput="calcCC()"></div>
+        <div class="form-group"><label>TDS Rate (%)</label><input type="number" id="cc-tds" placeholder="0" min="0" value="0" oninput="calcCC()"></div>
+        <div class="form-group full" id="cc-breakdown" style="display:none;">
+          <div style="background:var(--bg-secondary);border-radius:var(--radius);padding:12px;font-size:12px;">
+            <div class="breakdown-row"><span>Base Amount</span><span id="cc-bd-base">—</span></div>
+            <div class="breakdown-row"><span>+ GST</span><span id="cc-bd-gst">—</span></div>
+            <div class="breakdown-row"><span>− TDS</span><span id="cc-bd-tds">—</span></div>
+            <div class="breakdown-row total"><span>Net Payable</span><span id="cc-bd-net">—</span></div>
+          </div>
+        </div>
+        <div class="form-group full"><label>Notes</label><textarea id="cc-notes" placeholder="Optional notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('ccModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCCEntry()" id="saveCCBtn">Save Entry</button>
+    </div>
+  </div>
+</div>
+
 <!-- EMPLOYEE MODAL -->
 <div class="modal-overlay" id="employeeModal">
   <div class="modal" style="max-width:500px;">
@@ -1868,7 +1922,8 @@ let DATA = {
   categories: [],
   currencyRates: [],
   employees: [],
-  settings: []
+  settings: [],
+  creditcard: []
 };
 
 // Sheet names
@@ -1884,7 +1939,8 @@ const SHEETS = {
   categories: 'Categories',
   currencyRates: 'CurrencyRates',
   employees: 'Employees',
-  settings: 'Settings'
+  settings: 'Settings',
+  creditcard: 'CreditCard'
 };
 
 // Sheet headers
@@ -1900,7 +1956,8 @@ const HEADERS = {
   categories: ['Category','Subcategory'],
   currencyRates: ['Currency','RateToINR'],
   employees: ['ID','Name','MonthlySalary','AnnualBonus','JoiningDate','Status','Notes'],
-  settings: ['Key','Value']
+  settings: ['Key','Value'],
+  creditcard: ['ID','Date','Merchant','Category','Subcategory','Description','Currency','BaseAmount','GSTRate','GSTAmount','TDSRate','TDSAmount','TotalPayable','NetPayable','INRValue','RateUsed','Status','Notes']
 };
 
 // Default currency rates — seeded on first run if Currency Rates sheet is empty
@@ -2216,7 +2273,7 @@ async function deleteRow(sheetName, rowIndex) {
 // ═══════════════════════════════════════════════════════
 async function loadAllData() {
   try {
-    const [clients, invoices, expenses, payments, transactions, receivables, config, loans, categories, currencyRates, employees, settings] = await Promise.all([
+    const [clients, invoices, expenses, payments, transactions, receivables, config, loans, categories, currencyRates, employees, settings, creditcard] = await Promise.all([
       readSheet(SHEETS.clients),
       readSheet(SHEETS.invoices),
       readSheet(SHEETS.expenses),
@@ -2228,7 +2285,8 @@ async function loadAllData() {
       readSheet(SHEETS.categories),
       readSheet(SHEETS.currencyRates),
       readSheet(SHEETS.employees),
-      readSheet(SHEETS.settings)
+      readSheet(SHEETS.settings),
+      readSheet(SHEETS.creditcard)
     ]);
     DATA.clients = clients;
     DATA.invoices = invoices;
@@ -2242,6 +2300,7 @@ async function loadAllData() {
     DATA.currencyRates = currencyRates;
     DATA.employees = employees;
     DATA.settings = settings;
+    DATA.creditcard = creditcard;
   } catch (e) {
     console.error('Load error', e);
     showToast('Error loading data. Check console.');
@@ -2264,7 +2323,8 @@ const PAGE_TITLES = {
   reports: 'Auditor Reports',
   currency: 'Currency Rates',
   employees: 'Employees',
-  operations: 'Operations Dashboard'
+  operations: 'Operations Dashboard',
+  creditcard: 'Credit Card'
 };
 
 function getPageActions(page) {
@@ -2277,7 +2337,10 @@ function getPageActions(page) {
     loans: '<button class="btn btn-primary" onclick="openLoanModal()">+ Add Loan</button>',
     employees: '<button class="btn btn-primary" onclick="openEmployeeModal()">+ Add Employee</button>' +
              '<button class="btn" data-module="employees" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
-             '<button class="btn" data-module="employees" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>'
+             '<button class="btn" data-module="employees" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>',
+    creditcard: '<button class="btn btn-primary" onclick="openCCModal()">+ Add Entry</button>' +
+                '<button class="btn" data-module="creditcard" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
+                '<button class="btn" data-module="creditcard" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>'
   };
   const hasBulk = ['clients','invoices','expenses','payments'];
   let html = addBtns[page] || '';
@@ -2485,20 +2548,31 @@ function rebuildPageSkeleton(page) {
         <button class="btn btn-primary" onclick="saveCurrencyRates()" style="margin-top:16px;width:100%;" id="saveCurrencyBtn">Save Rates</button>
       </div>`,
 
+    creditcard: `
+      <div class="metrics-grid" id="cc-summary" style="margin-bottom:16px;"></div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Currency</th><th>Base Amt</th><th>GST</th><th>TDS</th><th>Net Payable</th><th>Status</th><th></th></tr></thead>
+        <tbody id="ccTable"><tr><td colspan="10"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
     operations: `
       <div class="card" style="margin-bottom:16px;">
         <div class="card-header"><div class="card-title">Bank Reconciliation</div><span style="font-size:12px;color:var(--text-muted);" id="ops-recon-date"></span></div>
         <div id="ops-recon-body"><div class="empty-state" style="padding:16px;"><p>Loading...</p></div></div>
       </div>
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">Payments Pending Tagging</div><div class="kpi-number" id="kpi-untagged" style="color:var(--warning);">—</div><div class="kpi-sub">Both inward &amp; outward</div></div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);">
+        <div class="kpi-card"><div class="kpi-label">Pending Tagging</div><div class="kpi-number" id="kpi-untagged" style="color:var(--warning);">—</div><div class="kpi-sub">Inward &amp; outward</div></div>
         <div class="kpi-card"><div class="kpi-label">Invoices Unpaid</div><div class="kpi-number" id="kpi-inv-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-inv-amount">—</div></div>
         <div class="kpi-card"><div class="kpi-label">Expenses Unpaid</div><div class="kpi-number" id="kpi-exp-unpaid" style="color:var(--danger);">—</div><div class="kpi-sub" id="kpi-exp-amount">—</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠ Expense Integrity</div><div class="kpi-number" id="kpi-exp-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Paid but no transactions</div></div>
+        <div class="kpi-card"><div class="kpi-label">⚠ Invoice Integrity</div><div class="kpi-number" id="kpi-inv-integrity" style="color:var(--danger);">—</div><div class="kpi-sub">Paid but no transactions</div></div>
       </div>
       <div class="ops-tabs">
         <div class="ops-tab active" onclick="switchOpsTab('tagging',this)">Pending Tagging</div>
         <div class="ops-tab" onclick="switchOpsTab('invoices',this)">Unpaid Invoices</div>
         <div class="ops-tab" onclick="switchOpsTab('expenses',this)">Unpaid Expenses</div>
+        <div class="ops-tab" onclick="switchOpsTab('exp-integrity',this)">⚠ Expense Integrity</div>
+        <div class="ops-tab" onclick="switchOpsTab('inv-integrity',this)">⚠ Invoice Integrity</div>
       </div>
       <div class="card"><div class="table-wrap"><table id="ops-table">
         <thead id="ops-thead"></thead>
@@ -2526,6 +2600,7 @@ function renderPage() {
     case 'currency': renderCurrencyRates(); break;
     case 'employees': renderEmployees(); break;
     case 'operations': renderOperations(); break;
+    case 'creditcard': renderCreditCard(); break;
   }
 }
 
@@ -2608,6 +2683,15 @@ const TEMPLATES = {
     ],
     notes: 'Date: YYYY-MM-DD. Category and Subcategory must exactly match values in the Categories sheet. GSTRate: 0 or 18. TDSRate: 0, 2, or 10. Vendor and PAN optional.'
   },
+  creditcard: {
+    columns: ['Date','Merchant','Category','Subcategory','Description','Currency','BaseAmount','GSTRate','TDSRate','Notes'],
+    sample: [
+      ['2026-04-05','Amazon AWS','Infrastructure','Cloud','Monthly cloud bill','USD','500','0','0',''],
+      ['2026-04-10','Swiggy','Office','Office Supplies','Team lunch','INR','2500','5','0',''],
+      ['2026-04-15','Zoho','Software','Productivity','CRM subscription','INR','4999','18','0','']
+    ],
+    notes: 'Date format: YYYY-MM-DD. BaseAmount is pre-GST amount. GSTRate and TDSRate as percentage numbers.'
+  },
   employees: {
     columns: ['Name','MonthlySalary','AnnualBonus','JoiningDate','Status','Notes'],
     sample: [
@@ -2662,7 +2746,10 @@ async function handleBulkUpload(module, file) {
         const row = rows[i];
         const rowNum = i + 2; // +2 for header and 1-based
         try {
-          if (module === 'employees') {
+          if (module === 'creditcard') {
+            await bulkSaveCCEntry(row, rowNum, errors);
+            success++;
+          } else if (module === 'employees') {
             await bulkSaveEmployee(row, rowNum, errors);
             success++;
           } else if (module === 'clients') {
@@ -3686,6 +3773,7 @@ function renderTagRows() {
           '<option value="Invoice"' + (row.type==='Invoice'?' selected':'') + '>Invoice</option>' +
           (payType === 'Outward' ? '<option value="Expense"' + (row.type==='Expense'?' selected':'') + '>Expense</option>' : '') +
           (payType === 'Outward' ? '<option value="Salary"' + (row.type==='Salary'?' selected':'') + '>Salary</option>' : '') +
+          (payType === 'Outward' ? '<option value="CreditCard"' + (row.type==='CreditCard'?' selected':'') + '>Credit Card</option>' : '') +
           '<option value="Loan"' + (row.type==='Loan'?' selected':'') + '>Loan</option>' +
         '</select>' +
         (row.type === 'Salary' ?
@@ -3695,6 +3783,8 @@ function renderTagRows() {
               '<option value="' + e.ID + '"' + (row.ref===e.ID?' selected':'') + '>' + e.Name + ' — ₹' + fmtNum(e.MonthlySalary) + '/mo</option>'
             ).join('') +
           '</select>')
+          : row.type === 'CreditCard' ?
+          ('<span style="flex:1;font-size:12px;color:var(--text-muted);padding:6px 0;">Credit card bill payment — enter amount paid to CC company</span>')
           :
           ('<select style="flex:1;" onchange="onTagRefChange(' + i + ', this)">' +
             '<option value="">Select...</option>' +
@@ -3854,6 +3944,7 @@ async function savePayment() {
   const type = getVal('p-type');
   const validTags = type !== 'Loan' ? payTagRows.filter(r => {
     if (r.type === 'Salary') return r.ref && parseFloat(r.salaryGross) > 0;
+    if (r.type === 'CreditCard') return r.amount > 0;
     return r.ref && r.ref !== '__new__' && r.ref !== '__new_loan__' && r.amount;
   }) : [];
 
@@ -3910,6 +4001,9 @@ async function savePayment() {
             showToast('Warning: No outstanding loan found for ' + emp.Name + '. Deduction not linked.');
           }
         }
+      } else if (tag.type === 'CreditCard') {
+        // CC payment — record as CreditCard pool transaction
+        await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'CreditCard', 'cc-pool', 'Credit Card Payment', parseFloat(tag.amount)]);
       } else {
         const txRow = [
           genId(), paymentId, date,
@@ -4219,16 +4313,16 @@ function renderPL() {
   document.getElementById('plMetrics').innerHTML = `
     <div class="metric-card">
       <div class="metric-label">Total Revenue</div>
-      <div class="metric-value text-success">₹${fmtNum(totalRev)}</div>
-      ${inclFuture && futureRev ? `<div class="metric-sub">Incl. ₹${fmtNum(futureRev)} future</div>` : ''}
+      <div class="metric-value text-success">₹${fmtNum2(totalRev)}</div>
+      ${inclFuture && futureRev ? `<div class="metric-sub">Incl. ₹${fmtNum2(futureRev)} future</div>` : ''}
     </div>
     <div class="metric-card">
       <div class="metric-label">Total Expenses</div>
-      <div class="metric-value text-danger">₹${fmtNum(totalExp)}</div>
+      <div class="metric-value text-danger">₹${fmtNum2(totalExp)}</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Net P&L</div>
-      <div class="metric-value ${netPL >= 0 ? 'text-success' : 'text-danger'}">₹${fmtNum(Math.abs(netPL))}</div>
+      <div class="metric-value ${netPL >= 0 ? 'text-success' : 'text-danger'}">₹${fmtNum2(Math.abs(netPL))}</div>
       <div class="metric-sub">${netPL >= 0 ? 'Profit' : 'Loss'}</div>
     </div>
     <div class="metric-card">
@@ -4242,7 +4336,6 @@ function renderPL() {
   invoices.forEach(i => {
     revByClient[i.ClientName] = (revByClient[i.ClientName] || 0) + invoiceBaseInINR(i);
   });
-  // Store invoices grouped by client for drilldown
   const invByClient = {};
   invoices.forEach(i => {
     if (!invByClient[i.ClientName]) invByClient[i.ClientName] = [];
@@ -4255,18 +4348,17 @@ function renderPL() {
     .map(([name, amt]) =>
       '<div class="breakdown-row" style="cursor:pointer;" onclick="showRevenueDrilldown(\'' + name.replace(/'/g,"\\'") + '\', window._plInvByClient[\'' + name.replace(/'/g,"\\'") + '\'])">' +
         '<span class="breakdown-label" style="text-decoration:underline;text-decoration-style:dotted;">' + name + '</span>' +
-        '<span>₹' + fmtNum(amt) + '</span>' +
+        '<span>₹' + fmtNum2(amt) + '</span>' +
       '</div>'
     ).join('') +
-    (inclFuture && futureRev ? '<div class="breakdown-row" style="color:var(--warning);"><span>Future receivables</span><span>₹' + fmtNum(futureRev) + '</span></div>' : '') +
-    '<div class="breakdown-row total"><span>Total</span><span>₹' + fmtNum(totalRev) + '</span></div>';
+    (inclFuture && futureRev ? '<div class="breakdown-row" style="color:var(--warning);"><span>Future receivables</span><span>₹' + fmtNum2(futureRev) + '</span></div>' : '') +
+    '<div class="breakdown-row total"><span>Total</span><span>₹' + fmtNum2(totalRev) + '</span></div>';
 
   // Expense breakdown — clickable by category
   const expByCat = {};
   expenses.forEach(e => {
     expByCat[e.Category] = (expByCat[e.Category] || 0) + expenseBaseInINR(e);
   });
-  // Store expenses grouped by category for drilldown
   const expByCatFull = {};
   expenses.forEach(e => {
     if (!expByCatFull[e.Category]) expByCatFull[e.Category] = [];
@@ -4279,10 +4371,10 @@ function renderPL() {
     .map(([cat, amt]) =>
       '<div class="breakdown-row" style="cursor:pointer;" onclick="showExpenseDrilldown(\'' + cat.replace(/'/g,"\\'") + '\', window._plExpByCat[\'' + cat.replace(/'/g,"\\'") + '\'])">' +
         '<span class="breakdown-label" style="text-decoration:underline;text-decoration-style:dotted;">' + cat + '</span>' +
-        '<span>₹' + fmtNum(amt) + '</span>' +
+        '<span>₹' + fmtNum2(amt) + '</span>' +
       '</div>'
     ).join('') +
-    '<div class="breakdown-row total"><span>Total</span><span>₹' + fmtNum(totalExp) + '</span></div>';
+    '<div class="breakdown-row total"><span>Total</span><span>₹' + fmtNum2(totalExp) + '</span></div>';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -4428,6 +4520,11 @@ function fmtNum(n) {
   return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
+function fmtNum2(n) {
+  const num = parseFloat(n) || 0;
+  return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function fmtINR(n) {
   return '₹' + fmtNum(n);
 }
@@ -4490,7 +4587,7 @@ function setBtnLoading(id, loading) {
   const btn = document.getElementById(id);
   if (!btn) return;
   btn.disabled = loading;
-  btn.innerHTML = loading ? '<span class="loading"></span> Saving...' : (id.includes('Client') ? 'Save Client' : id.includes('Invoice') ? 'Save Invoice' : id.includes('Loan') ? 'Save Loan' : id.includes('Currency') ? 'Save Rates' : id.includes('Employee') ? 'Save Employee' : 'Save Expense');
+  btn.innerHTML = loading ? '<span class="loading"></span> Saving...' : (id.includes('Client') ? 'Save Client' : id.includes('Invoice') ? 'Save Invoice' : id.includes('Loan') ? 'Save Loan' : id.includes('Currency') ? 'Save Rates' : id.includes('Employee') ? 'Save Employee' : id.includes('CC') ? 'Save Entry' : 'Save Expense');
 }
 
 let toastTimer;
@@ -4950,17 +5047,33 @@ function renderOperations() {
     return s + Math.max(0, base - paid);
   }, 0);
 
+  // Integrity checks — strict: Paid status must have transaction rows
+  const expIntegrityIssues = DATA.expenses.filter(e => {
+    if (e.Status !== 'Paid' && e.Status !== 'Partial') return false;
+    const txns = DATA.transactions.filter(t => t.RefType === 'Expense' && t.RefID === e.ID);
+    return txns.length === 0;
+  });
+  const invIntegrityIssues = DATA.invoices.filter(i => {
+    if (i.Status !== 'Paid' && i.Status !== 'Partial') return false;
+    const txns = DATA.transactions.filter(t => t.RefType === 'Invoice' && t.RefID === i.ID);
+    return txns.length === 0;
+  });
+
   const kpiUntagged = document.getElementById('kpi-untagged');
   const kpiInvUnpaid = document.getElementById('kpi-inv-unpaid');
   const kpiInvAmt = document.getElementById('kpi-inv-amount');
   const kpiExpUnpaid = document.getElementById('kpi-exp-unpaid');
   const kpiExpAmt = document.getElementById('kpi-exp-amount');
+  const kpiExpInt = document.getElementById('kpi-exp-integrity');
+  const kpiInvInt = document.getElementById('kpi-inv-integrity');
 
   if (kpiUntagged) kpiUntagged.textContent = untagged.length;
   if (kpiInvUnpaid) kpiInvUnpaid.textContent = unpaidInv.length;
   if (kpiInvAmt) kpiInvAmt.textContent = '₹' + fmtNum(pendingInvAmt) + ' outstanding';
   if (kpiExpUnpaid) kpiExpUnpaid.textContent = unpaidExp.length;
   if (kpiExpAmt) kpiExpAmt.textContent = '₹' + fmtNum(pendingExpAmt) + ' outstanding';
+  if (kpiExpInt) kpiExpInt.textContent = expIntegrityIssues.length;
+  if (kpiInvInt) kpiInvInt.textContent = invIntegrityIssues.length;
 
   renderOpsTable(currentOpsTab);
 }
@@ -5042,6 +5155,56 @@ function renderOpsTable(tab) {
         '<td>' + statusBadge(e.Status) + '</td>' +
         '</tr>';
     }).join('');
+
+  } else if (tab === 'exp-integrity') {
+    // Expenses marked Paid/Partial but with no transaction rows linked
+    const rows = DATA.expenses.filter(e => {
+      if (e.Status !== 'Paid' && e.Status !== 'Partial') return false;
+      return DATA.transactions.filter(t => t.RefType === 'Expense' && t.RefID === e.ID).length === 0;
+    }).sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
+
+    thead.innerHTML = '<tr><th>Date</th><th>Category</th><th>Subcategory</th><th>Vendor</th><th>Description</th><th>Net Payable</th><th>Status</th><th>Issue</th></tr>';
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon">✓</div><p>All paid expenses have valid transaction links!</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(e =>
+      '<tr style="background:var(--danger-light,#fff5f5);">' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(e.Date) + '</td>' +
+      '<td>' + e.Category + '</td>' +
+      '<td style="color:var(--text-muted);">' + (e.Subcategory || '—') + '</td>' +
+      '<td>' + (e.Vendor || '—') + '</td>' +
+      '<td style="color:var(--text-muted);">' + (e.Description || '—') + '</td>' +
+      '<td class="text-right"><strong>₹' + fmtNum(e.NetPayable) + '</strong></td>' +
+      '<td>' + statusBadge(e.Status) + '</td>' +
+      '<td style="color:var(--danger);font-size:12px;font-weight:500;">Marked ' + e.Status + ' but no payment transaction found</td>' +
+      '</tr>'
+    ).join('');
+
+  } else if (tab === 'inv-integrity') {
+    // Invoices marked Paid/Partial but with no transaction rows linked
+    const rows = DATA.invoices.filter(i => {
+      if (i.Status !== 'Paid' && i.Status !== 'Partial') return false;
+      return DATA.transactions.filter(t => t.RefType === 'Invoice' && t.RefID === i.ID).length === 0;
+    }).sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
+
+    thead.innerHTML = '<tr><th>Invoice #</th><th>Date</th><th>Client</th><th>Currency</th><th>Net Receivable</th><th>INR Value</th><th>Status</th><th>Issue</th></tr>';
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon">✓</div><p>All paid invoices have valid transaction links!</p></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(i =>
+      '<tr style="background:var(--danger-light,#fff5f5);">' +
+      '<td><strong style="font-weight:500;">' + i.InvoiceNumber + '</strong></td>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(i.Date) + '</td>' +
+      '<td>' + i.ClientName + '</td>' +
+      '<td><span class="badge badge-neutral">' + i.Currency + '</span></td>' +
+      '<td class="text-right">' + fmtNum(i.NetReceivable) + '</td>' +
+      '<td class="text-right" style="color:var(--text-muted);">' + (i.INRValue ? '₹' + fmtNum(i.INRValue) : '—') + '</td>' +
+      '<td>' + statusBadge(i.Status) + '</td>' +
+      '<td style="color:var(--danger);font-size:12px;font-weight:500;">Marked ' + i.Status + ' but no payment transaction found</td>' +
+      '</tr>'
+    ).join('');
   }
 }
 
@@ -5061,9 +5224,9 @@ function showRevenueDrilldown(clientName, invoices) {
       '<td><strong style="font-weight:500;font-size:12px;">' + i.InvoiceNumber + '</strong></td>' +
       '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(i.Date) + '</td>' +
       '<td><span class="badge badge-neutral" style="font-size:10px;">' + i.Currency + '</span></td>' +
-      '<td class="text-right">₹' + fmtNum(invoiceBaseInINR(i)) + '</td>' +
-      '<td class="text-right text-success">₹' + fmtNum(paid) + '</td>' +
-      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '">₹' + fmtNum(outstanding) + '</td>' +
+      '<td class="text-right">₹' + fmtNum2(invoiceBaseInINR(i)) + '</td>' +
+      '<td class="text-right text-success">₹' + fmtNum2(paid) + '</td>' +
+      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '">₹' + fmtNum2(outstanding) + '</td>' +
       '<td>' + statusBadge(i.Status) + '</td>' +
       '</tr>';
   }).join('');
@@ -5073,7 +5236,7 @@ function showRevenueDrilldown(clientName, invoices) {
       '<div class="drilldown-header">' +
         '<div>' +
           '<h3 style="font-size:14px;font-weight:500;">' + clientName + '</h3>' +
-          '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + invoices.length + ' invoices — Total ₹' + fmtNum(total) + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + invoices.length + ' invoices — Total ₹' + fmtNum2(total) + '</div>' +
         '</div>' +
         '<button class="btn btn-sm" onclick="this.closest(\'.drilldown-overlay\').remove()">✕</button>' +
       '</div>' +
@@ -5110,7 +5273,7 @@ function showExpenseDrilldown(categoryName, expenses) {
       const total = bySubcat[s].reduce((sum, e) => sum + expenseBaseInINR(e), 0);
       const escapedS = s.replace(/'/g, "\'");
       return '<div class="drilldown-item' + (s === selectedSubcat ? ' active' : '') + '" onclick="selectSubcat(\'' + escapedS + '\')">' +
-        s + '<div class="sub-amount">₹' + fmtNum(total) + '</div>' +
+        s + '<div class="sub-amount">₹' + fmtNum2(total) + '</div>' +
         '</div>';
     }).join('');
 
@@ -5119,9 +5282,9 @@ function showExpenseDrilldown(categoryName, expenses) {
       '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(e.Date) + '</td>' +
       '<td>' + (e.Description || '—') + '</td>' +
       '<td style="color:var(--text-muted);">' + (e.Vendor || '—') + '</td>' +
-      '<td class="text-right">₹' + fmtNum(expenseBaseInINR(e)) + '</td>' +
-      '<td class="text-right text-success">' + (parseFloat(e.GSTAmount||0) ? '₹'+fmtNum(e.GSTAmount) : '—') + '</td>' +
-      '<td class="text-right text-danger">' + (parseFloat(e.TDSAmount||0) ? '₹'+fmtNum(e.TDSAmount) : '—') + '</td>' +
+      '<td class="text-right">₹' + fmtNum2(expenseBaseInINR(e)) + '</td>' +
+      '<td class="text-right text-success">' + (parseFloat(e.GSTAmount||0) ? '₹'+fmtNum2(e.GSTAmount) : '—') + '</td>' +
+      '<td class="text-right text-danger">' + (parseFloat(e.TDSAmount||0) ? '₹'+fmtNum2(e.TDSAmount) : '—') + '</td>' +
       '<td>' + statusBadge(e.Status) + '</td>' +
       '</tr>'
     ).join('');
@@ -5133,7 +5296,7 @@ function showExpenseDrilldown(categoryName, expenses) {
       '<div class="drilldown-header">' +
         '<div>' +
           '<h3 style="font-size:14px;font-weight:500;">' + categoryName + '</h3>' +
-          '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Total ₹' + fmtNum(catTotal) + ' across ' + subcats.length + ' subcategories</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Total ₹' + fmtNum2(catTotal) + ' across ' + subcats.length + ' subcategories</div>' +
         '</div>' +
         '<button class="btn btn-sm" onclick="this.closest(\'.drilldown-overlay\').remove()">✕</button>' +
       '</div>' +
@@ -5141,7 +5304,7 @@ function showExpenseDrilldown(categoryName, expenses) {
         '<div class="drilldown-left">' + leftItems + '</div>' +
         '<div class="drilldown-right" id="dd-right">' +
           '<div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">' +
-            selectedSubcat + ' — ₹' + fmtNum(subcatTotal) + '</div>' +
+            selectedSubcat + ' — ₹' + fmtNum2(subcatTotal) + '</div>' +
           '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
             '<thead><tr><th>Date</th><th>Description</th><th>Vendor</th><th>Amount</th><th>GST</th><th>TDS</th><th>Status</th></tr></thead>' +
             '<tbody>' + rightRows + '</tbody>' +
@@ -5233,6 +5396,185 @@ function renderReconciliation(bodyId, dateId) {
         '<div class="metric-sub">Data as of ' + latestDateStr + '</div>' +
       '</div>' +
     '</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// CREDIT CARD
+// ═══════════════════════════════════════════════════════
+
+function getTotalCCPaid() {
+  // Sum all payments tagged as CreditCard type
+  return DATA.transactions
+    .filter(t => t.RefType === 'CreditCard')
+    .reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
+}
+
+function getTotalCCExpenses() {
+  return DATA.creditcard.reduce((s, e) => s + parseFloat(e.NetPayable || 0), 0);
+}
+
+function renderCreditCard() {
+  const totalPaid = getTotalCCPaid();
+  const totalExp = getTotalCCExpenses();
+  const balance = totalPaid - totalExp;
+
+  const summaryEl = document.getElementById('cc-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML =
+      '<div class="metric-card"><div class="metric-label">Total CC Payments Made</div><div class="metric-value text-success">₹' + fmtNum(totalPaid) + '</div><div class="metric-sub">From bank payments tagged as CC</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Total CC Expenses Entered</div><div class="metric-value text-danger">₹' + fmtNum(totalExp) + '</div><div class="metric-sub">Sum of all CC statement entries</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Outstanding / Unallocated</div><div class="metric-value ' + (Math.abs(balance) < 1 ? '' : balance > 0 ? 'text-warning' : 'text-danger') + '">₹' + fmtNum(Math.abs(balance)) + '</div>' +
+      '<div class="metric-sub">' + (Math.abs(balance) < 1 ? 'Fully reconciled ✓' : balance > 0 ? 'Payments exceed expenses' : 'Expenses exceed payments') + '</div></div>';
+  }
+
+  const tbody = document.getElementById('ccTable');
+  if (!tbody) return;
+
+  const rows = [...DATA.creditcard].sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">🃏</div><p>No credit card entries yet. Upload a CC statement or add entries manually.</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(e => {
+    const idx = DATA.creditcard.indexOf(e);
+    return '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(e.Date) + '</td>' +
+      '<td><strong style="font-weight:500;">' + (e.Merchant || '—') + '</strong></td>' +
+      '<td style="font-size:12px;">' + (e.Category || '—') + (e.Subcategory ? '<br><span style="color:var(--text-muted);">' + e.Subcategory + '</span>' : '') + '</td>' +
+      '<td><span class="badge badge-neutral">' + (e.Currency || 'INR') + '</span></td>' +
+      '<td class="text-right">' + fmtNum(e.BaseAmount) + '</td>' +
+      '<td class="text-right" style="color:var(--text-muted);">' + (parseFloat(e.GSTAmount||0) ? fmtNum(e.GSTAmount) : '—') + '</td>' +
+      '<td class="text-right text-danger">' + (parseFloat(e.TDSAmount||0) ? fmtNum(e.TDSAmount) : '—') + '</td>' +
+      '<td class="text-right text-success"><strong>' + fmtNum(e.NetPayable) + '</strong></td>' +
+      '<td>' + statusBadge(e.Status || 'Paid') + '</td>' +
+      '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
+        '<button class="btn btn-sm" onclick="openCCModal(' + idx + ')">Edit</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteRecord(\'creditcard\',\'' + e.ID + '\',' + idx + ')">×</button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function openCCModal(idx) {
+  editingId = idx !== undefined ? DATA.creditcard[idx].ID : null;
+  document.getElementById('ccModalTitle').textContent = editingId ? 'Edit CC Entry' : 'Add CC Entry';
+  const e = editingId ? DATA.creditcard[idx] : {};
+
+  // Populate currency dropdown
+  const curSel = document.getElementById('cc-currency');
+  curSel.innerHTML = DATA.currencyRates.map(r => '<option value="' + r.Currency + '"' + (r.Currency === (e.Currency || 'INR') ? ' selected' : '') + '>' + r.Currency + '</option>').join('');
+
+  // Populate category dropdown
+  const cats = [...new Set(DATA.categories.map(c => c.Category))].sort();
+  const catSel = document.getElementById('cc-cat');
+  catSel.innerHTML = '<option value="">Select category...</option>' + cats.map(c => '<option value="' + c + '"' + (c === e.Category ? ' selected' : '') + '>' + c + '</option>').join('');
+  onCCCatChange(e.Subcategory);
+
+  setVal('cc-date', e.Date || today());
+  setVal('cc-merchant', e.Merchant || '');
+  setVal('cc-desc', e.Description || '');
+  setVal('cc-amount', e.BaseAmount || '');
+  setVal('cc-gst', e.GSTRate || '0');
+  setVal('cc-tds', e.TDSRate || '0');
+  setVal('cc-notes', e.Notes || '');
+  calcCC();
+  openModal('ccModal');
+}
+
+function onCCCatChange(preselectSubcat) {
+  const cat = getVal('cc-cat');
+  const subcats = DATA.categories.filter(c => c.Category === cat).map(c => c.Subcategory).sort();
+  const subSel = document.getElementById('cc-subcat');
+  subSel.innerHTML = '<option value="">Select subcategory...</option>' + subcats.map(s => '<option value="' + s + '"' + (s === preselectSubcat ? ' selected' : '') + '>' + s + '</option>').join('');
+}
+
+function calcCC() {
+  const base = parseFloat(getVal('cc-amount')) || 0;
+  if (!base) { document.getElementById('cc-breakdown').style.display = 'none'; return; }
+  const gstRate = parseFloat(getVal('cc-gst')) || 0;
+  const tdsRate = parseFloat(getVal('cc-tds')) || 0;
+  const gstAmt = round2(base * gstRate / 100);
+  const tdsAmt = round2(base * tdsRate / 100);
+  const net = round2(base + gstAmt - tdsAmt);
+  const currency = getVal('cc-currency');
+  const sym = currSym(currency);
+  document.getElementById('cc-breakdown').style.display = '';
+  document.getElementById('cc-bd-base').textContent = sym + fmtNum(base);
+  document.getElementById('cc-bd-gst').textContent = gstAmt ? '+' + sym + fmtNum(gstAmt) : 'Nil';
+  document.getElementById('cc-bd-tds').textContent = tdsAmt ? '−' + sym + fmtNum(tdsAmt) : 'Nil';
+  document.getElementById('cc-bd-net').textContent = sym + fmtNum(net);
+}
+
+async function saveCCEntry() {
+  const date = getVal('cc-date');
+  const merchant = getVal('cc-merchant').trim();
+  const cat = getVal('cc-cat');
+  const subcat = getVal('cc-subcat');
+  const base = parseFloat(getVal('cc-amount')) || 0;
+  if (!date || !merchant || !cat || !subcat || !base) { showToast('Date, merchant, category, subcategory and amount are required'); return; }
+
+  const gstRate = parseFloat(getVal('cc-gst')) || 0;
+  const tdsRate = parseFloat(getVal('cc-tds')) || 0;
+  const gstAmt = round2(base * gstRate / 100);
+  const tdsAmt = round2(base * tdsRate / 100);
+  const total = round2(base + gstAmt);
+  const net = round2(total - tdsAmt);
+  const currency = getVal('cc-currency') || 'INR';
+  const rate = getRate(currency);
+
+  const row = [
+    editingId || genId(), date, merchant, cat, subcat,
+    getVal('cc-desc'), currency, base, gstRate, gstAmt,
+    tdsRate, tdsAmt, total, net,
+    round2(net * rate), rate, 'Paid', getVal('cc-notes')
+  ];
+
+  setBtnLoading('saveCCBtn', true);
+  try {
+    if (editingId) {
+      const idx = DATA.creditcard.findIndex(e => e.ID === editingId);
+      await updateRow(SHEETS.creditcard, idx, row);
+    } else {
+      await appendRow(SHEETS.creditcard, row);
+    }
+    await loadAllData();
+    renderCreditCard();
+    closeModal('ccModal');
+    showToast(editingId ? 'CC entry updated' : 'CC entry saved');
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  }
+  setBtnLoading('saveCCBtn', false);
+}
+
+async function bulkSaveCCEntry(row, rowNum, errors) {
+  const date = row['Date'] ? String(row['Date']).trim() : '';
+  const merchant = (row['Merchant'] || '').toString().trim();
+  const cat = (row['Category'] || '').toString().trim();
+  const subcat = (row['Subcategory'] || '').toString().trim();
+  const base = parseFloat(row['BaseAmount']) || 0;
+  if (!date) { errors.push('Row ' + rowNum + ': Date is required'); return; }
+  if (!merchant) { errors.push('Row ' + rowNum + ': Merchant is required'); return; }
+  if (!cat || !subcat) { errors.push('Row ' + rowNum + ': Category and Subcategory are required'); return; }
+  if (!base) { errors.push('Row ' + rowNum + ': BaseAmount is required'); return; }
+
+  const gstRate = parseFloat(row['GSTRate']) || 0;
+  const tdsRate = parseFloat(row['TDSRate']) || 0;
+  const gstAmt = round2(base * gstRate / 100);
+  const tdsAmt = round2(base * tdsRate / 100);
+  const total = round2(base + gstAmt);
+  const net = round2(total - tdsAmt);
+  const currency = (row['Currency'] || 'INR').toString().trim();
+  const rate = getRate(currency);
+
+  await appendRow(SHEETS.creditcard, [
+    genId(), date, merchant, cat, subcat,
+    (row['Description'] || '').toString().trim(),
+    currency, base, gstRate, gstAmt, tdsRate, tdsAmt, total, net,
+    round2(net * rate), rate, 'Paid', (row['Notes'] || '').toString().trim()
+  ]);
 }
 
 // App ready
