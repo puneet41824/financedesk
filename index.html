@@ -935,6 +935,9 @@
     <div class="nav-item" onclick="navigate('receivables')">
       <span class="icon">🔮</span> Future Receivables
     </div>
+    <div class="nav-item" onclick="navigate('projects')">
+      <span class="icon">📁</span> Projects
+    </div>
     <div class="nav-item" onclick="navigate('budget')">
       <span class="icon">🎯</span> Budget
     </div>
@@ -1361,6 +1364,18 @@
       </div>
     </div>
 
+    <!-- PROJECTS -->
+    <div class="page" id="page-projects">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Project Name</th><th>Client</th><th>Status</th><th>Description</th><th></th></tr></thead>
+            <tbody id="projectsTable"><tr><td colspan="5"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- COMPARISON -->
     <div class="page" id="page-comparison">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
@@ -1588,8 +1603,10 @@
           </select>
         </div>
         <div class="form-group full">
-          <label>Project</label>
-          <input type="text" id="i-project" placeholder="Project name (for budget tracking)">
+          <label>Project <span style="font-size:11px;color:var(--text-muted);">(filtered by client)</span></label>
+          <select id="i-project">
+            <option value="">— No project —</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Service Month <span style="font-size:11px;color:var(--text-muted);">(for budget matching)</span></label>
@@ -1784,6 +1801,45 @@
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('paymentModal')">Cancel</button>
       <button class="btn btn-primary" onclick="savePayment()">Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h3 id="projectModalTitle">Add Project</h3>
+      <button class="btn btn-sm" onclick="closeModal('projectModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Project Name *</label>
+          <input type="text" id="proj-name" placeholder="e.g. DiTOS ERP Implementation">
+        </div>
+        <div class="form-group full">
+          <label>Client *</label>
+          <select id="proj-client">
+            <option value="">Select client...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="proj-status">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Description</label>
+          <textarea id="proj-desc" placeholder="Brief description of the project..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('projectModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProject()" id="saveProjectBtn">Save Project</button>
     </div>
   </div>
 </div>
@@ -2011,7 +2067,8 @@ let DATA = {
   settings: [],
   creditcard: [],
   budgetIncome: [],
-  budgetExpense: []
+  budgetExpense: [],
+  projects: []
 };
 
 // Sheet names
@@ -2030,7 +2087,8 @@ const SHEETS = {
   settings: 'Settings',
   creditcard: 'CreditCard',
   budgetIncome: 'BudgetIncome',
-  budgetExpense: 'BudgetExpense'
+  budgetExpense: 'BudgetExpense',
+  projects: 'Projects'
 };
 
 // Sheet headers
@@ -2049,7 +2107,8 @@ const HEADERS = {
   settings: ['Key','Value'],
   creditcard: ['ID','Date','Merchant','Category','Subcategory','Description','Currency','BaseAmount','GSTRate','GSTAmount','TDSRate','TDSAmount','TotalPayable','NetPayable','INRValue','RateUsed','Status','Notes'],
   budgetIncome: ['ID','Client','Project','Month','BudgetAmount'],
-  budgetExpense: ['ID','Category','Subcategory','Month','BudgetAmount']
+  budgetExpense: ['ID','Category','Subcategory','Month','BudgetAmount'],
+  projects: ['ID','Name','ClientID','ClientName','Status','Description']
 };
 
 // Default currency rates — seeded on first run if Currency Rates sheet is empty
@@ -2365,7 +2424,7 @@ async function deleteRow(sheetName, rowIndex) {
 // ═══════════════════════════════════════════════════════
 async function loadAllData() {
   try {
-    const [clients, invoices, expenses, payments, transactions, receivables, config, loans, categories, currencyRates, employees, settings, creditcard, budgetIncome, budgetExpense] = await Promise.all([
+    const [clients, invoices, expenses, payments, transactions, receivables, config, loans, categories, currencyRates, employees, settings, creditcard, budgetIncome, budgetExpense, projects] = await Promise.all([
       readSheet(SHEETS.clients),
       readSheet(SHEETS.invoices),
       readSheet(SHEETS.expenses),
@@ -2380,7 +2439,8 @@ async function loadAllData() {
       readSheet(SHEETS.settings),
       readSheet(SHEETS.creditcard),
       readSheet(SHEETS.budgetIncome),
-      readSheet(SHEETS.budgetExpense)
+      readSheet(SHEETS.budgetExpense),
+      readSheet(SHEETS.projects)
     ]);
     DATA.clients = clients;
     DATA.invoices = invoices;
@@ -2397,6 +2457,7 @@ async function loadAllData() {
     DATA.creditcard = creditcard;
     DATA.budgetIncome = budgetIncome;
     DATA.budgetExpense = budgetExpense;
+    DATA.projects = projects;
   } catch (e) {
     console.error('Load error', e);
     showToast('Error loading data. Check console.');
@@ -2421,6 +2482,7 @@ const PAGE_TITLES = {
   employees: 'Employees',
   operations: 'Operations Dashboard',
   creditcard: 'Credit Card',
+  projects: 'Projects',
   budget: 'Budget',
   comparison: 'Budget vs Actual'
 };
@@ -2438,6 +2500,7 @@ function getPageActions(page) {
              '<button class="btn" data-module="employees" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>',
     creditcard: '<button class="btn btn-primary" onclick="openCCModal()">+ Add Entry</button>',
     comparison: '',
+    projects: '<button class="btn btn-primary" onclick="openProjectModal()">+ Add Project</button>',
     budget: '<button class="btn" onclick="uploadBudget(\'income\')">&#8593; Upload Income Budget</button>' +
             '<button class="btn" onclick="uploadBudget(\'expense\')">&#8593; Upload Expense Budget</button>' +
             '<button class="btn btn-sm" onclick="downloadBudgetTemplate(\'income\')">&#8595; Income Template</button>' +
@@ -2651,6 +2714,12 @@ function rebuildPageSkeleton(page) {
         <button class="btn btn-primary" onclick="saveCurrencyRates()" style="margin-top:16px;width:100%;" id="saveCurrencyBtn">Save Rates</button>
       </div>`,
 
+    projects: `
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Project Name</th><th>Client</th><th>Status</th><th>Description</th><th></th></tr></thead>
+        <tbody id="projectsTable"><tr><td colspan="5"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>`,
+
     comparison: `
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
         <div class="budget-tabs" style="margin-bottom:0;">
@@ -2731,6 +2800,7 @@ function renderPage() {
     case 'employees': renderEmployees(); break;
     case 'operations': renderOperations(); break;
     case 'creditcard': renderCreditCard(); break;
+    case 'projects': renderProjects(); break;
     case 'budget': renderBudget(); break;
     case 'comparison': renderComparison(); break;
   }
@@ -3359,7 +3429,14 @@ function calcInvoice() {
   document.getElementById('bd-gst-type').textContent = gstLabel;
 }
 
-function onInvoiceClientChange() { calcInvoice(); }
+function onInvoiceClientChange() {
+  const clientId = getVal('i-client');
+  const projSel = document.getElementById('i-project');
+  const activeProjects = DATA.projects.filter(p => p.ClientID === clientId && p.Status === 'Active');
+  projSel.innerHTML = '<option value="">— No project —</option>' +
+    activeProjects.map(p => '<option value="' + p.Name + '">' + p.Name + '</option>').join('');
+  calcInvoice();
+}
 
 function populateInvClientFilter() {
   const sel = document.getElementById('invClientFilter');
@@ -3431,7 +3508,14 @@ function openInvoiceModal(idx) {
   setVal('i-num', inv.InvoiceNumber || '');
   setVal('i-date', inv.Date || today());
   setVal('i-client', inv.ClientID || '');
-  setVal('i-project', inv.Project || '');
+
+  // Populate project dropdown for selected client
+  const projSel = document.getElementById('i-project');
+  const clientId = inv.ClientID || '';
+  const activeProjects = DATA.projects.filter(p => p.ClientID === clientId && p.Status === 'Active');
+  projSel.innerHTML = '<option value="">— No project —</option>' +
+    activeProjects.map(p => '<option value="' + p.Name + '"' + (p.Name === inv.Project ? ' selected' : '') + '>' + p.Name + '</option>').join('');
+
   setVal('i-service-month', inv.ServiceMonth || '');
   setVal('i-desc', inv.Description || '');
   setVal('i-currency', inv.Currency || 'INR');
@@ -4727,7 +4811,7 @@ function setBtnLoading(id, loading) {
   const btn = document.getElementById(id);
   if (!btn) return;
   btn.disabled = loading;
-  btn.innerHTML = loading ? '<span class="loading"></span> Saving...' : (id.includes('Client') ? 'Save Client' : id.includes('Invoice') ? 'Save Invoice' : id.includes('Loan') ? 'Save Loan' : id.includes('Currency') ? 'Save Rates' : id.includes('Employee') ? 'Save Employee' : id.includes('CC') ? 'Save Entry' : 'Save Expense');
+  btn.innerHTML = loading ? '<span class="loading"></span> Saving...' : (id.includes('Client') ? 'Save Client' : id.includes('Invoice') ? 'Save Invoice' : id.includes('Loan') ? 'Save Loan' : id.includes('Currency') ? 'Save Rates' : id.includes('Employee') ? 'Save Employee' : id.includes('CC') ? 'Save Entry' : id.includes('Project') ? 'Save Project' : 'Save Expense');
 }
 
 let toastTimer;
@@ -5942,6 +6026,85 @@ function getPaymentIntegrityIssues() {
 }
 
 // ═══════════════════════════════════════════════════════
+// PROJECTS
+// ═══════════════════════════════════════════════════════
+function renderProjects() {
+  const tbody = document.getElementById('projectsTable');
+  const rows = [...DATA.projects].sort((a, b) => {
+    if (a.ClientName < b.ClientName) return -1;
+    if (a.ClientName > b.ClientName) return 1;
+    return a.Name.localeCompare(b.Name);
+  });
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="icon">📁</div><p>No projects yet. Add your first project.</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(p => '<tr>' +
+    '<td><strong style="font-weight:500;">' + p.Name + '</strong></td>' +
+    '<td>' + (p.ClientName || '—') + '</td>' +
+    '<td><span class="badge ' + (p.Status === 'Active' ? 'badge-success' : 'badge-neutral') + '">' + (p.Status || 'Active') + '</span></td>' +
+    '<td style="color:var(--text-muted);font-size:12px;">' + (p.Description || '—') + '</td>' +
+    '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
+      '<button class="btn btn-sm" onclick="openProjectModalById(\'' + p.ID + '\')">Edit</button>' +
+      '<button class="btn btn-sm btn-danger" onclick="deleteRecord(\'projects\',\'' + p.ID + '\',' + DATA.projects.indexOf(p) + ')">×</button>' +
+    '</div></td>' +
+    '</tr>'
+  ).join('');
+}
+
+function openProjectModal(idx) {
+  editingId = idx !== undefined ? DATA.projects[idx].ID : null;
+  document.getElementById('projectModalTitle').textContent = editingId ? 'Edit Project' : 'Add Project';
+  const p = editingId ? DATA.projects[idx] : {};
+
+  // Populate client dropdown
+  const clientSel = document.getElementById('proj-client');
+  clientSel.innerHTML = '<option value="">Select client...</option>' +
+    DATA.clients.map(c => '<option value="' + c.ID + '"' + (c.ID === p.ClientID ? ' selected' : '') + '>' + c.Name + '</option>').join('');
+
+  setVal('proj-name', p.Name || '');
+  setVal('proj-status', p.Status || 'Active');
+  setVal('proj-desc', p.Description || '');
+  openModal('projectModal');
+}
+
+function openProjectModalById(id) {
+  const idx = DATA.projects.findIndex(p => p.ID === id);
+  openProjectModal(idx >= 0 ? idx : undefined);
+}
+
+async function saveProject() {
+  const name = getVal('proj-name').trim();
+  const clientId = getVal('proj-client');
+  if (!name || !clientId) { showToast('Project name and client are required'); return; }
+
+  const client = DATA.clients.find(c => c.ID === clientId);
+  const row = [
+    editingId || genId(),
+    name, clientId, client?.Name || '',
+    getVal('proj-status') || 'Active',
+    getVal('proj-desc')
+  ];
+
+  setBtnLoading('saveProjectBtn', true);
+  try {
+    if (editingId) {
+      const idx = DATA.projects.findIndex(p => p.ID === editingId);
+      await updateRow(SHEETS.projects, idx, row);
+    } else {
+      await appendRow(SHEETS.projects, row);
+    }
+    await loadAllData();
+    renderProjects();
+    closeModal('projectModal');
+    showToast(editingId ? 'Project updated' : 'Project saved');
+  } catch(e) { showToast('Error: ' + e.message); }
+  setBtnLoading('saveProjectBtn', false);
+}
+
+// ═══════════════════════════════════════════════════════
 // BUDGET
 // ═══════════════════════════════════════════════════════
 const FY_MONTHS = [
@@ -5994,46 +6157,43 @@ function renderIncomeBudgetEntry(container) {
     budgetMap[(r.Client||'') + '|' + (r.Project||'') + '|' + r.Month] = parseFloat(r.BudgetAmount || 0);
   });
 
-  const rowKeys = new Set();
-  DATA.budgetIncome.forEach(r => rowKeys.add((r.Client||'') + '|' + (r.Project||'')));
+  // Use active projects from Project Master as rows
+  const activeProjects = DATA.projects.filter(p => p.Status === 'Active')
+    .sort((a, b) => a.ClientName.localeCompare(b.ClientName) || a.Name.localeCompare(b.Name));
 
-  const rows = [...rowKeys].sort();
-
-  if (!rows.length) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>No income budget yet. Upload using the ↑ Upload Income Budget button, or add a row below.</p><button class="btn btn-primary" onclick="addBudgetIncomeRow()" style="margin-top:12px;">+ Add Client/Project Row</button></div>';
+  if (!activeProjects.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📁</div><p>No active projects found. Go to <strong>Projects</strong> page to add projects first.</p></div>';
     return;
   }
 
   let html = '<table class="budget-matrix"><thead><tr>' +
     '<th style="min-width:160px;position:sticky;left:0;z-index:3;background:var(--primary);">Client</th>' +
-    '<th style="min-width:140px;position:sticky;left:160px;z-index:3;background:var(--primary);">Project</th>' +
-    MONTH_LABELS.map((m, i) => '<th>' + m + '</th>').join('') +
+    '<th style="min-width:160px;position:sticky;left:160px;z-index:3;background:var(--primary);">Project</th>' +
+    MONTH_LABELS.map(m => '<th>' + m + '</th>').join('') +
     '<th>Total</th></tr></thead><tbody>';
 
   let grandTotal = 0;
   const colTotals = {};
   FY_MONTHS.forEach(m => colTotals[m] = 0);
 
-  rows.forEach(rowKey => {
-    const [client, project] = rowKey.split('|');
+  activeProjects.forEach(proj => {
+    const rowKey = encodeURIComponent(proj.ClientName + '|' + proj.Name);
     let rowTotal = 0;
-    html += '<tr><td>' + (client||'—') + '</td><td style="color:var(--text-muted);">' + (project||'—') + '</td>';
+    html += '<tr><td>' + proj.ClientName + '</td><td style="color:var(--text-muted);">' + proj.Name + '</td>';
     FY_MONTHS.forEach(month => {
-      const amt = budgetMap[rowKey + '|' + month] || 0;
+      const amt = budgetMap[proj.ClientName + '|' + proj.Name + '|' + month] || 0;
       rowTotal += amt; colTotals[month] += amt;
-      html += '<td><span class="budget-cell" onclick="startEditBudget(this,\'' + encodeURIComponent(rowKey) + '\',\'' + month + '\',\'income\')" data-val="' + amt + '">' +
+      html += '<td><span class="budget-cell" onclick="startEditBudget(this,\'' + rowKey + '\',\'' + month + '\',\'income\')" data-val="' + amt + '">' +
         (amt ? '₹' + fmtNum(amt) : '<span style="color:var(--text-hint);">—</span>') + '</span></td>';
     });
     grandTotal += rowTotal;
     html += '<td><strong>₹' + fmtNum(rowTotal) + '</strong></td></tr>';
   });
 
-  // Totals row
   html += '<tr class="row-total"><td colspan="2">TOTAL</td>';
   FY_MONTHS.forEach(m => { html += '<td>₹' + fmtNum(colTotals[m]) + '</td>'; });
   html += '<td>₹' + fmtNum(grandTotal) + '</td></tr>';
   html += '</tbody></table>';
-  html += '<button class="btn btn-sm" onclick="addBudgetIncomeRow()" style="margin-top:12px;">+ Add Row</button>';
   container.innerHTML = html;
 }
 
@@ -6043,19 +6203,19 @@ function renderExpenseBudgetEntry(container) {
     budgetMap[(r.Category||'') + '|' + (r.Subcategory||'') + '|' + r.Month] = parseFloat(r.BudgetAmount || 0);
   });
 
-  const rowKeys = new Set();
-  DATA.budgetExpense.forEach(r => rowKeys.add((r.Category||'') + '|' + (r.Subcategory||'')));
+  // Auto-load ALL category/subcategory combinations from Categories sheet
+  const allCats = DATA.categories
+    .filter(c => c.Category && c.Subcategory)
+    .sort((a, b) => a.Category.localeCompare(b.Category) || a.Subcategory.localeCompare(b.Subcategory));
 
-  const rows = [...rowKeys].sort();
-
-  if (!rows.length) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>No expense budget yet. Upload using the ↑ Upload Expense Budget button, or add a row below.</p><button class="btn btn-primary" onclick="addBudgetExpenseRow()" style="margin-top:12px;">+ Add Category Row</button></div>';
+  if (!allCats.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🎯</div><p>No categories found. Categories are loaded automatically from your Categories sheet.</p></div>';
     return;
   }
 
   let html = '<table class="budget-matrix"><thead><tr>' +
     '<th style="min-width:160px;position:sticky;left:0;z-index:3;background:var(--primary);">Category</th>' +
-    '<th style="min-width:140px;position:sticky;left:160px;z-index:3;background:var(--primary);">Subcategory</th>' +
+    '<th style="min-width:160px;position:sticky;left:160px;z-index:3;background:var(--primary);">Subcategory</th>' +
     MONTH_LABELS.map(m => '<th>' + m + '</th>').join('') +
     '<th>Total</th></tr></thead><tbody>';
 
@@ -6063,25 +6223,31 @@ function renderExpenseBudgetEntry(container) {
   const colTotals = {};
   FY_MONTHS.forEach(m => colTotals[m] = 0);
 
-  rows.forEach(rowKey => {
-    const [cat, subcat] = rowKey.split('|');
+  // Group by category for visual separation
+  let lastCat = '';
+  allCats.forEach(cat => {
+    const rowKey = encodeURIComponent(cat.Category + '|' + cat.Subcategory);
     let rowTotal = 0;
-    html += '<tr><td>' + (cat||'—') + '</td><td style="color:var(--text-muted);">' + (subcat||'—') + '</td>';
+    const isNewCat = cat.Category !== lastCat;
+    lastCat = cat.Category;
+    const rowStyle = isNewCat ? 'border-top:2px solid var(--primary-light);' : '';
+    html += '<tr style="' + rowStyle + '">' +
+      '<td>' + (isNewCat ? '<strong style="font-weight:600;">' + cat.Category + '</strong>' : '') + '</td>' +
+      '<td style="color:var(--text-muted);">' + cat.Subcategory + '</td>';
     FY_MONTHS.forEach(month => {
-      const amt = budgetMap[rowKey + '|' + month] || 0;
+      const amt = budgetMap[cat.Category + '|' + cat.Subcategory + '|' + month] || 0;
       rowTotal += amt; colTotals[month] += amt;
-      html += '<td><span class="budget-cell" onclick="startEditBudget(this,\'' + encodeURIComponent(rowKey) + '\',\'' + month + '\',\'expense\')" data-val="' + amt + '">' +
+      html += '<td><span class="budget-cell" onclick="startEditBudget(this,\'' + rowKey + '\',\'' + month + '\',\'expense\')" data-val="' + amt + '">' +
         (amt ? '₹' + fmtNum(amt) : '<span style="color:var(--text-hint);">—</span>') + '</span></td>';
     });
     grandTotal += rowTotal;
-    html += '<td><strong>₹' + fmtNum(rowTotal) + '</strong></td></tr>';
+    html += '<td><strong>' + (rowTotal ? '₹' + fmtNum(rowTotal) : '—') + '</strong></td></tr>';
   });
 
   html += '<tr class="row-total"><td colspan="2">TOTAL</td>';
   FY_MONTHS.forEach(m => { html += '<td>₹' + fmtNum(colTotals[m]) + '</td>'; });
   html += '<td>₹' + fmtNum(grandTotal) + '</td></tr>';
   html += '</tbody></table>';
-  html += '<button class="btn btn-sm" onclick="addBudgetExpenseRow()" style="margin-top:12px;">+ Add Row</button>';
   container.innerHTML = html;
 }
 
@@ -6219,13 +6385,14 @@ function renderIncomeComparison(container) {
     });
   }
 
-  // Row keys from budget
-  const rowKeys = new Set();
-  DATA.budgetIncome.forEach(r => rowKeys.add((r.Client||'') + '|' + (r.Project||'')));
-  const rows = [...rowKeys].sort();
+  // Row keys from project master (active projects)
+  const activeProjects = DATA.projects.filter(p => p.Status === 'Active')
+    .sort((a, b) => a.ClientName.localeCompare(b.ClientName) || a.Name.localeCompare(b.Name));
+
+  const rows = activeProjects.map(p => p.ClientName + '|' + p.Name);
 
   if (!rows.length) {
-    container.innerHTML = '<div class="empty-state"><p>No income budget data. Go to Budget page to enter data first.</p></div>';
+    container.innerHTML = '<div class="empty-state"><p>No active projects. Go to Projects page to add projects first.</p></div>';
     return;
   }
 
@@ -6262,12 +6429,14 @@ function renderExpenseComparison(container) {
     actualMap[key] = (actualMap[key] || 0) + expenseBaseInINR(e);
   });
 
-  const rowKeys = new Set();
-  DATA.budgetExpense.forEach(r => rowKeys.add((r.Category||'') + '|' + (r.Subcategory||'')));
-  const rows = [...rowKeys].sort();
+  // All categories as rows
+  const rows = DATA.categories
+    .filter(c => c.Category && c.Subcategory)
+    .sort((a, b) => a.Category.localeCompare(b.Category) || a.Subcategory.localeCompare(b.Subcategory))
+    .map(c => c.Category + '|' + c.Subcategory);
 
   if (!rows.length) {
-    container.innerHTML = '<div class="empty-state"><p>No expense budget data. Go to Budget page to enter data first.</p></div>';
+    container.innerHTML = '<div class="empty-state"><p>No categories found.</p></div>';
     return;
   }
 
