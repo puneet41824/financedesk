@@ -2509,7 +2509,9 @@ function getPageActions(page) {
     employees: '<button class="btn btn-primary" onclick="openEmployeeModal()">+ Add Employee</button>' +
              '<button class="btn" data-module="employees" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
              '<button class="btn" data-module="employees" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>',
-    creditcard: '<button class="btn btn-primary" onclick="openCCModal()">+ Add Entry</button>',
+    creditcard: '<button class="btn btn-primary" onclick="openCCModal()">+ Add Entry</button>' +
+                '<button class="btn" data-module="creditcard" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
+                '<button class="btn" data-module="creditcard" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>',
     comparison: '',
     projects: '<button class="btn btn-primary" onclick="openProjectModal()">+ Add Project</button>',
     budget: '<button class="btn" onclick="uploadBudget(\'income\')">&#8593; Upload Income Budget</button>' +
