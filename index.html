@@ -2942,6 +2942,18 @@ function downloadTemplate(module) {
   showToast('Template downloaded');
 }
 
+function excelDateToString(dateRaw) {
+  // Converts Excel date (Date object or string) to YYYY-MM-DD safely
+  // Uses local date components to avoid UTC offset shift (IST = UTC+5:30)
+  if (dateRaw instanceof Date) {
+    const y = dateRaw.getFullYear();
+    const m = String(dateRaw.getMonth() + 1).padStart(2, '0');
+    const d = String(dateRaw.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+  return (dateRaw || '').toString().trim();
+}
+
 async function handleBulkUpload(module, file) {
   if (!file) return;
   showToast('Reading file...');
@@ -3032,7 +3044,7 @@ async function bulkSaveEmployee(row, rowNum, errors) {
   const dateRaw = row['JoiningDate'];
   let joiningDate = '';
   if (dateRaw instanceof Date) {
-    joiningDate = dateRaw.toISOString().split('T')[0];
+    joiningDate = excelDateToString(dateRaw);
   } else {
     joiningDate = (dateRaw || '').toString().trim();
   }
@@ -3099,7 +3111,7 @@ async function bulkSaveInvoice(row, rowNum, errors) {
   // Format date
   let dateStr = '';
   if (dateRaw instanceof Date) {
-    dateStr = dateRaw.toISOString().split('T')[0];
+    dateStr = excelDateToString(dateRaw);
   } else {
     dateStr = (dateRaw || '').toString().trim();
   }
@@ -3159,7 +3171,7 @@ async function bulkSaveExpense(row, rowNum, errors) {
 
   let dateStr = '';
   if (dateRaw instanceof Date) {
-    dateStr = dateRaw.toISOString().split('T')[0];
+    dateStr = excelDateToString(dateRaw);
   } else {
     dateStr = (dateRaw || '').toString().trim();
   }
@@ -3196,7 +3208,7 @@ async function bulkSavePayment(row, rowNum, errors) {
 
   let dateStr = '';
   if (dateRaw instanceof Date) {
-    dateStr = dateRaw.toISOString().split('T')[0];
+    dateStr = excelDateToString(dateRaw);
   } else {
     dateStr = (dateRaw || '').toString().trim();
   }
@@ -4478,7 +4490,7 @@ async function saveReceivable() {
   if (!client || !desc || !amount) { showToast('Client, description and amount required'); return; }
 
   const row = [genId(), client, getVal('r-project').trim(), desc, getVal('r-currency'), amount,
-               getVal('r-date'), getVal('r-notes'), new Date().toISOString().split('T')[0]];
+               getVal('r-date'), getVal('r-notes'), today()];
   try {
     await appendRow(SHEETS.receivables, row);
     await loadAllData();
@@ -4801,7 +4813,7 @@ function round2(n) {
 }
 
 function today() {
-  return new Date().toISOString().split('T')[0];
+  const n = new Date(); return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0');
 }
 
 function currSym(c) {
