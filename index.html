@@ -6303,6 +6303,8 @@ async function addBudgetIncomeRow() {
   showToast('Row added — click any cell to enter budget amounts');
 }
 
+
+  
 async function addBudgetExpenseRow() {
   const cats = [...new Set(DATA.categories.map(c => c.Category))].sort();
   const cat = prompt('Category:\n' + cats.join(', '));
