@@ -1200,42 +1200,10 @@
 
     <!-- LOANS -->
     <div class="page" id="page-loans">
-      <div class="filter-bar">
-        <input type="text" placeholder="Search loans..." id="loanSearch" oninput="renderLoans()">
-        <select id="loanStatusFilter" onchange="renderLoans()">
-          <option value="">All status</option>
-          <option value="Pending">Pending</option>
-          <option value="Partial">Partial</option>
-          <option value="Settled">Settled</option>
-        </select>
-        <select id="loanTypeFilter" onchange="renderLoans()">
-          <option value="">All types</option>
-          <option value="Taken">Taken (inward)</option>
-          <option value="Given">Given (outward)</option>
-        </select>
-      </div>
-      <div class="card">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Person</th>
-                <th>Type</th>
-                <th>Amount (INR)</th>
-                <th>Paid Back</th>
-                <th>Outstanding</th>
-                <th>Description</th>
-                <th>Status</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="loansTable">
-              <tr><td colspan="9"><div class="empty-state"><p>Loading...</p></div></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Employee</th><th>Opening Given</th><th>Opening Taken</th><th>Total Given</th><th>Total Taken</th><th>Net Outstanding</th></tr></thead>
+        <tbody id="loansTable"><tr><td colspan="6"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+      </table></div></div>
     </div>
 
     <!-- FUTURE RECEIVABLES -->
@@ -2100,7 +2068,7 @@ const HEADERS = {
   transactions: ['ID','PaymentID','PaymentDate','RefType','RefID','RefLabel','AmountINR'],
   receivables: ['ID','ClientName','Project','Description','Currency','Amount','ExpectedDate','Notes','CreatedAt'],
   config: ['Email','AllowedTabs'],
-  loans: ['ID','Date','PersonName','EmployeeID','Type','AmountINR','Description','Status','Notes'],
+  loans: ['ID','EmployeeID','EmployeeName','OpeningGiven','OpeningTaken','OpeningDate'],
   categories: ['Category','Subcategory'],
   currencyRates: ['Currency','RateToINR'],
   employees: ['ID','Name','MonthlySalary','AnnualBonus','JoiningDate','Status','Notes'],
@@ -2269,11 +2237,14 @@ async function sheetsRequest(method, path, body) {
   };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(url, opts);
-  if (res.status === 401) {
-    // Token expired, request new one
-    tokenClient.requestAccessToken();
-    throw new Error('Session expired. Please sign in again.');
+
+  if (res.status === 401 || res.status === 403) {
+    // Token expired or insufficient scope — request a fresh token with full scope
+    showToast('Session expired — re-authenticating...');
+    tokenClient.requestAccessToken({ prompt: '' }); // prompt:'' = silent if possible
+    throw new Error('Session expired. Please try again after re-authentication.');
   }
+
   const data = await res.json();
   if (!res.ok) {
     const msg = (data && data.error && data.error.message) ? data.error.message : ('Request failed with status ' + res.status);
@@ -2505,7 +2476,7 @@ function getPageActions(page) {
     expenses: '<button class="btn btn-primary" onclick="openExpenseModal()">+ Add Expense</button>' + '<button class="btn" onclick="exportExpensesToBudgetFormat()">&#8595; Export to Budget Format</button>',
     payments: '<button class="btn btn-primary" onclick="openPaymentModal()">+ Add Payment</button>',
     receivables: '<button class="btn btn-primary" onclick="openReceivableModal()">+ Add Receivable</button>',
-    loans: '<button class="btn btn-primary" onclick="openLoanModal()">+ Add Loan</button>',
+    loans: '',
     employees: '<button class="btn btn-primary" onclick="openEmployeeModal()">+ Add Employee</button>' +
              '<button class="btn" data-module="employees" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
              '<button class="btn" data-module="employees" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>',
@@ -2659,13 +2630,9 @@ function rebuildPageSkeleton(page) {
 
     loans: `
       <div class="filter-bar">
-        <input type="text" placeholder="Search loans..." id="loanSearch" oninput="renderLoans()">
-        <select id="loanStatusFilter" onchange="renderLoans()"><option value="">All status</option><option value="Pending">Pending</option><option value="Partial">Partial</option><option value="Settled">Settled</option></select>
-        <select id="loanTypeFilter" onchange="renderLoans()"><option value="">All types</option><option value="Taken">Taken</option><option value="Given">Given</option></select>
-      </div>
       <div class="card"><div class="table-wrap"><table>
-        <thead><tr><th>Date</th><th>Person</th><th>Type</th><th>Amount (INR)</th><th>Paid Back</th><th>Outstanding</th><th>Description</th><th>Status</th><th></th></tr></thead>
-        <tbody id="loansTable"><tr><td colspan="9"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
+        <thead><tr><th>Employee</th><th>Opening Given</th><th>Opening Taken</th><th>Total Given</th><th>Total Taken</th><th>Net Outstanding</th></tr></thead>
+        <tbody id="loansTable"><tr><td colspan="6"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
       </table></div></div>`,
 
     employees: `
@@ -2943,14 +2910,23 @@ function downloadTemplate(module) {
 }
 
 function excelDateToString(dateRaw) {
-  // Converts Excel date (Date object or string) to YYYY-MM-DD safely
-  // Uses local date components to avoid UTC offset shift (IST = UTC+5:30)
-  if (dateRaw instanceof Date) {
-    const y = dateRaw.getFullYear();
-    const m = String(dateRaw.getMonth() + 1).padStart(2, '0');
-    const d = String(dateRaw.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + d;
+  // Handles Excel date serial numbers and Date objects safely (IST-safe, no UTC shift)
+  if (typeof dateRaw === 'number') {
+    // Excel serial: days since 1899-12-30
+    const d = new Date(0);
+    d.setUTCFullYear(1899, 11, 30);
+    d.setUTCDate(d.getUTCDate() + Math.floor(dateRaw));
+    return d.getUTCFullYear() + '-' +
+      String(d.getUTCMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getUTCDate()).padStart(2, '0');
   }
+  if (dateRaw instanceof Date) {
+    // Use UTC methods since SheetJS creates Date objects in UTC
+    return dateRaw.getUTCFullYear() + '-' +
+      String(dateRaw.getUTCMonth() + 1).padStart(2, '0') + '-' +
+      String(dateRaw.getUTCDate()).padStart(2, '0');
+  }
+  // String date — return as-is after trimming
   return (dateRaw || '').toString().trim();
 }
 
@@ -4003,12 +3979,13 @@ function renderTagRows() {
     .map(e => '<option value="' + e.ID + '" data-label="' + e.Category + ' ' + fmtDate(e.Date) + '">' + e.Category + ' — ' + fmtDate(e.Date) + ' — ₹' + fmtNum(e.NetPayable) + ' — Paid: ₹' + fmtNum(getTotalPaid('Expense', e.ID)) + '</option>')
     .join('');
 
-  const loanOptions = '<option value="__new_loan__" data-label="">+ Add new loan...</option>' +
-    DATA.loans
-    .filter(l => l.Status !== 'Settled')
+  const loanOptions = DATA.loans
     .map(l => {
-      const outstanding = parseFloat(l.AmountINR || 0) - getTotalRepaid(l.ID);
-      return '<option value="' + l.ID + '" data-label="Loan: ' + l.PersonName + '">' + l.PersonName + ' (' + l.Type + ') — ₹' + fmtNum(l.AmountINR) + ' — Outstanding: ₹' + fmtNum(outstanding) + '</option>';
+      const empName = l.EmployeeName || l.PersonName || '';
+      const given = (parseFloat(l.OpeningGiven||0)) + getLoanTotal(l.EmployeeID, 'LoanGiven');
+      const taken = (parseFloat(l.OpeningTaken||0)) + getLoanTotal(l.EmployeeID, 'LoanTaken') + getLoanTotal(l.EmployeeID, 'LoanDeduction');
+      const net = given - taken;
+      return '<option value="' + l.EmployeeID + '" data-label="Loan: ' + empName + '">' + empName + ' — Net Outstanding: ₹' + fmtNum(Math.abs(net)) + (net >= 0 ? ' (co. gave)' : ' (emp. gave)') + '</option>';
     })
     .join('');
 
@@ -4051,17 +4028,11 @@ function renderTagRows() {
           '<div class="breakdown-row" style="margin-top:8px;"><span class="breakdown-label">Net Bank Payment</span><span id="sal-net-' + i + '" class="text-success">₹' + fmtNum((parseFloat(row.salaryGross||0) - parseFloat(row.salaryDeduction||0))) + '</span></div>' +
         '</div>'
         : '') +
-      (row.type === 'Loan' && row.ref === '__new_loan__' ?
-        '<div style="margin-top:10px;padding:10px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border);">' +
-        '<div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">New Loan</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-          '<div class="form-group"><label>Date *</label><input type="date" id="ql-date-' + i + '" value="' + today() + '"></div>' +
-          '<div class="form-group"><label>Type *</label><select id="ql-type-' + i + '"><option value="Taken">Taken</option><option value="Given">Given</option></select></div>' +
-          '<div class="form-group full"><label>Person Name *</label><input type="text" id="ql-person-' + i + '" placeholder="Lender/borrower name"></div>' +
-          '<div class="form-group"><label>Amount (INR) *</label><input type="number" id="ql-amount-' + i + '" placeholder="0" min="0"></div>' +
-          '<div class="form-group"><label>Description</label><input type="text" id="ql-desc-' + i + '" placeholder="Purpose"></div>' +
-        '</div>' +
-        '<button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="saveQuickLoan(' + i + ')">Save & Select Loan</button>' +
+      (row.type === 'Loan' && row.ref ?
+        '<div style="margin-top:8px;padding:8px 10px;background:var(--bg-secondary);border-radius:var(--radius);font-size:12px;display:flex;align-items:center;gap:12px;">' +
+        '<span style="color:var(--text-muted);">Direction:</span>' +
+        '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="loan-dir-' + i + '" value="LoanGiven" ' + (row.loanDir !== 'LoanTaken' ? 'checked' : '') + ' onchange="payTagRows[' + i + '].loanDir=this.value"> Given (company lent to employee)</label>' +
+        '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="loan-dir-' + i + '" value="LoanTaken" ' + (row.loanDir === 'LoanTaken' ? 'checked' : '') + ' onchange="payTagRows[' + i + '].loanDir=this.value"> Taken (employee lent to company)</label>' +
         '</div>' : '') +
       (isNewExpense ? '<div id="quick-expense-' + i + '" style="margin-top:10px;padding:10px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border);">' +
         '<div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">New Expense</div>' +
@@ -4086,7 +4057,7 @@ function renderTagRows() {
 function onTagRefChange(i, sel) {
   payTagRows[i].ref = sel.value;
   payTagRows[i].refLabel = sel.options[sel.selectedIndex].getAttribute('data-label') || '';
-  if (sel.value === '__new__' || sel.value === '__new_loan__') {
+  if (sel.value === '__new__') {
     renderTagRows();
   }
 }
@@ -4192,7 +4163,7 @@ async function savePayment() {
   const validTags = type !== 'Loan' ? payTagRows.filter(r => {
     if (r.type === 'Salary') return r.ref && parseFloat(r.salaryGross) > 0;
     if (r.type === 'CreditCard') return r.amount > 0;
-    return r.ref && r.ref !== '__new__' && r.ref !== '__new_loan__' && r.amount;
+    return r.ref && r.ref !== '__new__' && r.amount;
   }) : [];
 
   // Check if we are tagging an existing payment or creating a new one
@@ -4235,22 +4206,22 @@ async function savePayment() {
         // 2. Create a transaction linking the payment to this expense
         await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'Expense', expId, 'Salary: ' + emp.Name, gross]);
 
-        // 3. If there's a loan deduction, find the oldest pending loan for this employee and reduce it
+        // 3. If there's a loan deduction, create LoanDeduction transaction against employee ID
         if (deduction > 0) {
-          const empLoans = DATA.loans
-            .filter(l => l.EmployeeID === emp.ID && l.Status !== 'Settled')
-            .sort((a, b) => parseLocalDate(a.Date) - parseLocalDate(b.Date));
-
-          if (empLoans.length > 0) {
-            const oldestLoan = empLoans[0];
-            await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'LoanDeduction', oldestLoan.ID, 'Salary deduction: ' + emp.Name, deduction]);
+          const loanRec = DATA.loans.find(l => l.EmployeeID === emp.ID);
+          if (loanRec) {
+            await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'LoanDeduction', emp.ID, 'Salary deduction: ' + emp.Name, deduction]);
           } else {
-            showToast('Warning: No outstanding loan found for ' + emp.Name + '. Deduction not linked.');
+            showToast('Warning: No loan record found for ' + emp.Name + '. Deduction not linked.');
           }
         }
       } else if (tag.type === 'CreditCard') {
-        // CC payment — record as CreditCard pool transaction
         await appendRow(SHEETS.transactions, [genId(), paymentId, date, 'CreditCard', 'cc-pool', 'Credit Card Payment', parseFloat(tag.amount)]);
+      } else if (tag.type === 'Loan') {
+        // Use loanDir (LoanGiven/LoanTaken) set by radio button in tag row
+        const refType = tag.loanDir || 'LoanGiven';
+        const empName = DATA.employees.find(e => e.ID === tag.ref)?.Name || tag.refLabel || tag.ref;
+        await appendRow(SHEETS.transactions, [genId(), paymentId, date, refType, tag.ref, empName, parseFloat(tag.amount)]);
       } else {
         const txRow = [
           genId(), paymentId, date,
@@ -4277,17 +4248,9 @@ async function savePayment() {
           if (exp) await syncExpenseStatus(exp);
           else console.warn('Could not find expense with ID', tag.ref);
         } else if (tag.type === 'Loan') {
-          await syncLoanStatus(tag.ref);
+          // No sync needed — loans calculated live from transactions
         } else if (tag.type === 'Salary') {
-          // Sync the expense that was just created + oldest loan if deduction applied
-          await loadAllData();
-          const emp = DATA.employees.find(e => e.ID === tag.ref);
-          if (emp && parseFloat(tag.salaryDeduction) > 0) {
-            const empLoans = DATA.loans
-              .filter(l => l.EmployeeID === emp.ID && l.Status !== 'Settled')
-              .sort((a, b) => parseLocalDate(a.Date) - parseLocalDate(b.Date));
-            if (empLoans.length > 0) await syncLoanStatus(empLoans[0].ID);
-          }
+          // No loan status sync needed — loans calculated live
         }
       } catch (syncErr) {
         console.error('Status sync failed for tag', tag, syncErr);
@@ -4926,202 +4889,120 @@ function renderTransactions() {
 // ═══════════════════════════════════════════════════════
 // LOANS
 // ═══════════════════════════════════════════════════════
-function getTotalRepaid(loanId) {
-  const loan = DATA.loans.find(l => l.ID === loanId);
-  const loanType = loan ? loan.Type : 'Given';
 
+// Get total of LoanGiven or LoanTaken or LoanDeduction transactions for an employee
+function getLoanTotal(empId, refType) {
   return DATA.transactions
-    .filter(t => {
-      if (t.RefID !== loanId) return false;
-      // LoanDeduction (salary deduction) only applies to Given loans
-      if (t.RefType === 'LoanDeduction') return loanType === 'Given';
-      if (t.RefType === 'Loan') {
-        const payment = DATA.payments.find(p => p.ID === t.PaymentID);
-        if (!payment) return false;
-        if (loanType === 'Given') {
-          // Company lent out → repaid when money comes back IN
-          return payment.Type === 'Inward';
-        } else {
-          // Company borrowed → repaid when money goes back OUT to lender
-          return payment.Type === 'Outward';
-        }
-      }
-      return false;
-    })
+    .filter(t => t.RefType === refType && t.RefID === empId)
     .reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
 }
 
-async function syncLoanStatus(loanId) {
-  const loan = DATA.loans.find(l => l.ID === loanId);
-  if (!loan) return;
-  const totalRepaid = getTotalRepaid(loanId);
-  const amount = parseFloat(loan.AmountINR || 0);
-  const newStatus = totalRepaid >= amount ? 'Settled' : totalRepaid > 0 ? 'Partial' : 'Pending';
-  if (newStatus !== loan.Status) {
-    const idx = DATA.loans.findIndex(l => l.ID === loanId);
-    const row = HEADERS.loans.map(h => loan[h] || '');
-    row[HEADERS.loans.indexOf('Status')] = newStatus;
-    await updateRow(SHEETS.loans, idx, row);
-  }
+// Get net loan position for an employee
+function getEmployeeLoanSummary(empId) {
+  const rec = DATA.loans.find(l => l.EmployeeID === empId);
+  const openingGiven  = parseFloat(rec?.OpeningGiven  || 0);
+  const openingTaken  = parseFloat(rec?.OpeningTaken  || 0);
+  const txnGiven      = getLoanTotal(empId, 'LoanGiven');
+  const txnTaken      = getLoanTotal(empId, 'LoanTaken');
+  const txnDeduction  = getLoanTotal(empId, 'LoanDeduction');
+  const totalGiven    = openingGiven  + txnGiven;
+  const totalTaken    = openingTaken  + txnTaken + txnDeduction;
+  const net           = totalGiven - totalTaken; // positive = employee owes company
+  return { openingGiven, openingTaken, txnGiven, txnTaken, txnDeduction, totalGiven, totalTaken, net };
 }
 
 function renderLoans() {
-  const search = (document.getElementById('loanSearch')?.value || '').toLowerCase();
-  const statusFilter = document.getElementById('loanStatusFilter')?.value || '';
-  const typeFilter = document.getElementById('loanTypeFilter')?.value || '';
-
-  let rows = DATA.loans.filter(l => {
-    const ms = !search || (l.PersonName || '').toLowerCase().includes(search) || (l.Description || '').toLowerCase().includes(search);
-    const mst = !statusFilter || l.Status === statusFilter;
-    const mt = !typeFilter || l.Type === typeFilter;
-    return ms && mst && mt;
-  }).sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
-
   const tbody = document.getElementById('loansTable');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="icon">💰</div><p>No loans yet.</p></div></td></tr>';
+  if (!tbody) return;
+
+  if (!DATA.loans.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">💰</div><p>No loan records. Loan records are created automatically when you tag a payment as Loan type.</p></div></td></tr>';
     return;
   }
 
-  tbody.innerHTML = rows.map(l => {
-    const amount = parseFloat(l.AmountINR || 0);
-    const repaid = getTotalRepaid(l.ID);
-    const outstanding = amount - repaid;
-    const statusMap = { Settled: 'badge-success', Partial: 'badge-warning', Pending: 'badge-danger' };
-    const emp = l.EmployeeID ? DATA.employees.find(e => e.ID === l.EmployeeID) : null;
-    return '<tr>' +
-      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(l.Date) + '</td>' +
-      '<td><strong style="font-weight:500;">' + l.PersonName + '</strong>' +
-        (emp ? '<br><span class="badge badge-blue" style="font-size:10px;">👤 ' + emp.Name + '</span>' : '') +
-      '</td>' +
-      '<td><span class="badge ' + (l.Type === 'Taken' ? 'badge-success' : 'badge-warning') + '">' + l.Type + '</span></td>' +
-      '<td class="text-right">₹' + fmtNum(amount) + '</td>' +
-      '<td class="text-right text-success">₹' + fmtNum(repaid) + '</td>' +
-      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '"><strong>₹' + fmtNum(outstanding) + '</strong></td>' +
-      '<td style="color:var(--text-muted);">' + (l.Description || '—') + '</td>' +
-      '<td><span class="badge ' + (statusMap[l.Status] || 'badge-neutral') + '">' + (l.Status || 'Pending') + '</span></td>' +
-      '<td><div style="display:flex;gap:4px;">' +
-        '<button class="btn btn-sm" onclick="openLoanModal(' + DATA.loans.indexOf(l) + ')">Edit</button>' +
-        '<button class="btn btn-sm btn-danger" data-id="' + l.ID + '" data-idx="' + DATA.loans.indexOf(l) + '" onclick="deleteRecord(\'loans\',this.dataset.id,parseInt(this.dataset.idx))">×</button>' +
-      '</div></td>' +
+  tbody.innerHTML = DATA.loans
+    .map(l => {
+      const s = getEmployeeLoanSummary(l.EmployeeID);
+      const netStyle = s.net > 0 ? 'color:var(--danger);' : s.net < 0 ? 'color:var(--success);' : '';
+      const netLabel = s.net > 0 ? '−₹' + fmtNum(s.net) : s.net < 0 ? '+₹' + fmtNum(Math.abs(s.net)) : '₹0 (Settled)';
+      return '<tr>' +
+        '<td><a href="javascript:void(0)" onclick="showLoanStatement(this.dataset.id, decodeURIComponent(this.dataset.name))" data-id="' + l.EmployeeID + '" data-name="' + encodeURIComponent(l.EmployeeName||'') + '" style="font-weight:500;text-decoration:underline;text-decoration-style:dotted;">' + (l.EmployeeName || '—') + '</a></td>' +
+        '<td class="text-right">₹' + fmtNum(s.totalGiven) + '</td>' +
+        '<td class="text-right">₹' + fmtNum(s.totalTaken) + '</td>' +
+        '<td class="text-right text-success">₹' + fmtNum(s.txnGiven) + '</td>' +
+        '<td class="text-right text-danger">₹' + fmtNum(s.txnTaken + s.txnDeduction) + '</td>' +
+        '<td class="text-right" style="' + netStyle + '"><strong>' + netLabel + '</strong></td>' +
+        '</tr>';
+    }).join('');
+}
+
+function showLoanStatement(empId, empName) {
+  const s = getEmployeeLoanSummary(empId);
+  const rec = DATA.loans.find(l => l.EmployeeID === empId);
+
+  // Build transaction rows with running balance
+  const txns = DATA.transactions
+    .filter(t => t.RefID === empId && ['LoanGiven','LoanTaken','LoanDeduction'].includes(t.RefType))
+    .map(t => {
+      const pmt = DATA.payments.find(p => p.ID === t.PaymentID);
+      return { date: t.PaymentDate, desc: pmt?.Description || t.RefLabel || '—', type: t.RefType, amount: parseFloat(t.AmountINR||0) };
+    })
+    .sort((a, b) => {
+      const da = parseLocalDate(a.date), db = parseLocalDate(b.date);
+      return da - db;
+    });
+
+  // Running balance (positive = company gave more)
+  let balance = parseFloat(rec?.OpeningGiven||0) - parseFloat(rec?.OpeningTaken||0);
+
+  let rows = '';
+  // Opening row
+  if (balance !== 0 || rec?.OpeningDate) {
+    rows += '<tr style="background:var(--bg-secondary);">' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + (rec?.OpeningDate ? fmtDate(rec.OpeningDate) : '—') + '</td>' +
+      '<td colspan="3" style="color:var(--text-muted);font-style:italic;">Opening Balance</td>' +
+      '<td class="text-right ' + (balance > 0 ? 'text-danger' : 'text-success') + '"><strong>₹' + fmtNum(Math.abs(balance)) + (balance > 0 ? ' (co. gave)' : ' (emp. gave)') + '</strong></td>' +
       '</tr>';
-  }).join('');
-}
-
-function openLoanModal(idx) {
-  editingId = idx !== undefined ? DATA.loans[idx].ID : null;
-  document.getElementById('loanModalTitle').textContent = editingId ? 'Edit Loan' : 'Add Loan';
-  const l = editingId ? DATA.loans[idx] : {};
-
-  // Populate employee dropdown
-  const empSel = document.getElementById('l-employee');
-  empSel.innerHTML = '<option value="">— Not an employee loan —</option>' +
-    DATA.employees.filter(e => e.Status === 'Active').map(e =>
-      '<option value="' + e.ID + '"' + (l.EmployeeID === e.ID ? ' selected' : '') + '>' + e.Name + '</option>'
-    ).join('');
-
-  setVal('l-date', l.Date || today());
-  setVal('l-type', l.Type || 'Given');
-  setVal('l-person', l.PersonName || '');
-  setVal('l-amount', l.AmountINR || '');
-  setVal('l-desc', l.Description || '');
-  setVal('l-notes', l.Notes || '');
-  openModal('loanModal');
-}
-
-function onLoanEmployeeChange() {
-  const empId = getVal('l-employee');
-  const emp = DATA.employees.find(e => e.ID === empId);
-  if (emp) setVal('l-person', emp.Name);
-}
-
-async function saveLoan() {
-  const date = getVal('l-date');
-  const person = getVal('l-person').trim();
-  const amount = parseFloat(getVal('l-amount')) || 0;
-  if (!date || !person || !amount) { showToast('Date, person name and amount are required'); return; }
-
-  const row = [
-    editingId || genId(), date, person,
-    getVal('l-employee'),
-    getVal('l-type'), amount,
-    getVal('l-desc'), 'Pending',
-    getVal('l-notes')
-  ];
-
-  setBtnLoading('saveLoanBtn', true);
-  try {
-    if (editingId) {
-      const idx = DATA.loans.findIndex(l => l.ID === editingId);
-      await updateRow(SHEETS.loans, idx, row);
-    } else {
-      await appendRow(SHEETS.loans, row);
-    }
-    await loadAllData();
-    renderLoans();
-    closeModal('loanModal');
-    showToast(editingId ? 'Loan updated' : 'Loan saved');
-  } catch(e) {
-    showToast('Error: ' + e.message);
   }
-  setBtnLoading('saveLoanBtn', false);
-}
 
-// ═══════════════════════════════════════════════════════
-// EMPLOYEES
-// ═══════════════════════════════════════════════════════
-function getEmployeeOutstandingLoan(empId) {
-  const loans = DATA.loans.filter(l => l.EmployeeID === empId && l.Status !== 'Settled');
-  let given = 0; // company gave to employee (employee owes company)
-  let taken = 0; // employee gave to company (company owes employee)
-  loans.forEach(l => {
-    const paid = getTotalRepaid(l.ID);
-    const outstanding = Math.max(0, parseFloat(l.AmountINR || 0) - paid);
-    if (l.Type === 'Given') given += outstanding;
-    else taken += outstanding;
-  });
-  return { given, taken, net: given - taken };
-}
+  txns.forEach(t => {
+    let given = 0, taken = 0;
+    if (t.type === 'LoanGiven') { given = t.amount; balance += t.amount; }
+    else { taken = t.amount; balance -= t.amount; }
 
-function showEmployeeLoanBreakup(empId, empName) {
-  const loans = DATA.loans.filter(l => l.EmployeeID === empId);
-  if (!loans.length) return;
-
-  const rows = loans.map(l => {
-    const paid = getTotalRepaid(l.ID);
-    const outstanding = Math.max(0, parseFloat(l.AmountINR || 0) - paid);
-    return '<tr>' +
-      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(l.Date) + '</td>' +
-      '<td><span class="badge ' + (l.Type === 'Given' ? 'badge-warning' : 'badge-success') + '">' + l.Type + '</span></td>' +
-      '<td>' + (l.Description || '—') + '</td>' +
-      '<td class="text-right">₹' + fmtNum(l.AmountINR) + '</td>' +
-      '<td class="text-right text-success">₹' + fmtNum(paid) + '</td>' +
-      '<td class="text-right ' + (outstanding > 0 ? 'text-danger' : '') + '"><strong>₹' + fmtNum(outstanding) + '</strong></td>' +
-      '<td>' + statusBadge(l.Status) + '</td>' +
+    const typeLabel = t.type === 'LoanGiven' ? 'Given' : t.type === 'LoanDeduction' ? 'Deduction' : 'Taken';
+    const typeBadge = t.type === 'LoanGiven' ? 'badge-warning' : t.type === 'LoanDeduction' ? 'badge-neutral' : 'badge-success';
+    rows += '<tr>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(t.date) + '</td>' +
+      '<td>' + t.desc + '</td>' +
+      '<td><span class="badge ' + typeBadge + '" style="font-size:10px;">' + typeLabel + '</span></td>' +
+      '<td class="text-right">' + (given ? '<span class="text-danger">₹' + fmtNum(given) + '</span>' : '—') + ' / ' + (taken ? '<span class="text-success">₹' + fmtNum(taken) + '</span>' : '—') + '</td>' +
+      '<td class="text-right ' + (balance > 0 ? 'text-danger' : balance < 0 ? 'text-success' : '') + '"><strong>' + (balance > 0 ? '−₹' : balance < 0 ? '+₹' : '₹') + fmtNum(Math.abs(balance)) + '</strong></td>' +
       '</tr>';
-  }).join('');
+  });
 
-  const { given, taken, net } = getEmployeeOutstandingLoan(empId);
-  const netLabel = net > 0 ? 'Employee owes company' : net < 0 ? 'Company owes employee' : 'Settled';
-  const netColor = net > 0 ? 'text-danger' : net < 0 ? 'text-success' : '';
+  if (!txns.length && balance === 0) {
+    rows = '<tr><td colspan="5"><div class="empty-state"><p>No loan transactions found.</p></div></td></tr>';
+  }
 
+  const netLabel = s.net > 0 ? 'Employee owes Company' : s.net < 0 ? 'Company owes Employee' : 'Settled';
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay open';
   overlay.style.zIndex = '300';
   overlay.innerHTML =
-    '<div class="modal" style="max-width:680px;">' +
+    '<div class="modal" style="max-width:720px;">' +
       '<div class="modal-header">' +
-        '<h3>' + empName + ' — Loan Summary</h3>' +
+        '<h3>' + empName + ' — Loan Statement</h3>' +
         '<button class="btn btn-sm" onclick="this.closest(\'.modal-overlay\').remove()">✕</button>' +
       '</div>' +
       '<div class="modal-body">' +
         '<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">' +
-          '<div class="metric-card"><div class="metric-label">Given to Employee</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(given) + '</div></div>' +
-          '<div class="metric-card"><div class="metric-label">Taken from Employee</div><div class="metric-value text-success" style="font-size:18px;">₹' + fmtNum(taken) + '</div></div>' +
-          '<div class="metric-card"><div class="metric-label">Net (' + netLabel + ')</div><div class="metric-value ' + netColor + '" style="font-size:18px;">₹' + fmtNum(Math.abs(net)) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Total Given to Employee</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(s.totalGiven) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Total Taken from Employee</div><div class="metric-value text-success" style="font-size:18px;">₹' + fmtNum(s.totalTaken) + '</div></div>' +
+          '<div class="metric-card"><div class="metric-label">Net (' + netLabel + ')</div><div class="metric-value ' + (s.net > 0 ? 'text-danger' : s.net < 0 ? 'text-success' : '') + '" style="font-size:18px;">₹' + fmtNum(Math.abs(s.net)) + '</div></div>' +
         '</div>' +
         '<div class="table-wrap"><table style="font-size:13px;">' +
-          '<thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>Paid Back</th><th>Outstanding</th><th>Status</th></tr></thead>' +
+          '<thead><tr><th>Date</th><th>Description</th><th>Type</th><th>Given / Taken</th><th>Balance</th></tr></thead>' +
           '<tbody>' + rows + '</tbody>' +
         '</table></div>' +
       '</div>' +
@@ -5141,7 +5022,7 @@ function renderEmployees() {
   }
 
   tbody.innerHTML = rows.map(e => {
-    const loanSummary = getEmployeeOutstandingLoan(e.ID);
+    const loanSummary = getEmployeeLoanSummary(e.ID);
     const net = loanSummary.net;
     const hasLoans = DATA.loans.some(l => l.EmployeeID === e.ID);
     const netDisplay = net === 0 && !hasLoans ? '—' :
@@ -5149,7 +5030,7 @@ function renderEmployees() {
        net < 0 ? '<span style="color:var(--success);">+₹' + fmtNum(Math.abs(net)) + '</span>' :
        '<span style="color:var(--text-hint);">Settled</span>');
     const loanCell = hasLoans ?
-      '<a href="javascript:void(0)" onclick="showEmployeeLoanBreakup(\'' + e.ID + '\',\'' + e.Name.replace(/'/g, "\\'") + '\')" style="text-decoration:underline;text-decoration-style:dotted;color:inherit;">' + netDisplay + '</a>' :
+      '<a href="javascript:void(0)" onclick="showLoanStatement(\'' + e.ID + '\',\'' + e.Name.replace(/'/g, "\\'") + '\')" style="text-decoration:underline;text-decoration-style:dotted;color:inherit;">' + netDisplay + '</a>' :
       netDisplay;
     return '<tr>' +
       '<td><strong style="font-weight:500;">' + e.Name + '</strong></td>' +
@@ -5880,7 +5761,7 @@ function getPaymentIntegrityIssues() {
   const loanMap    = Object.fromEntries(DATA.loans.map(l => [l.ID, l]));
   const paymentMap = Object.fromEntries(DATA.payments.map(p => [p.ID, p]));
 
-  const VALID_REF_TYPES = ['Invoice', 'Expense', 'Loan', 'LoanDeduction', 'CreditCard'];
+  const VALID_REF_TYPES = ['Invoice', 'Expense', 'LoanGiven', 'LoanTaken', 'LoanDeduction', 'CreditCard'];
 
   // Group transactions by payment and by PaymentID+RefID for duplicate check
   const txnsByPayment = {};
@@ -6000,25 +5881,25 @@ function getPaymentIntegrityIssues() {
         });
       }
 
-    } else if (t.RefType === 'Loan') {
-      if (!loanMap[t.RefID]) {
+    } else if (t.RefType === 'LoanGiven' || t.RefType === 'LoanTaken') {
+      if (!DATA.employees.find(e => e.ID === t.RefID)) {
         issues.push({
           type: 'Type 1 — Orphan Link', severity: 'High',
           paymentDate: payment.Date, paymentDesc: payment.Description,
           paymentAmt: payment.AmountINR, refType: 'Loan',
           refLabel: t.RefLabel || t.RefID, txnAmt: t.AmountINR,
-          issue: 'Linked Loan ID "' + t.RefID + '" does not exist'
+          issue: 'Linked Employee ID "' + t.RefID + '" not found in Employees'
         });
       }
 
     } else if (t.RefType === 'LoanDeduction') {
-      if (!loanMap[t.RefID]) {
+      if (!DATA.employees.find(e => e.ID === t.RefID)) {
         issues.push({
           type: 'Type 1 — Orphan Link', severity: 'High',
           paymentDate: payment.Date, paymentDesc: payment.Description,
           paymentAmt: payment.AmountINR, refType: 'LoanDeduction',
           refLabel: t.RefLabel || t.RefID, txnAmt: t.AmountINR,
-          issue: 'Linked Loan ID "' + t.RefID + '" for deduction does not exist'
+          issue: 'Linked Employee ID "' + t.RefID + '" for deduction not found in Employees'
         });
       }
 
@@ -6303,8 +6184,6 @@ async function addBudgetIncomeRow() {
   showToast('Row added — click any cell to enter budget amounts');
 }
 
-
-  
 async function addBudgetExpenseRow() {
   const cats = [...new Set(DATA.categories.map(c => c.Category))].sort();
   const cat = prompt('Category:\n' + cats.join(', '));
