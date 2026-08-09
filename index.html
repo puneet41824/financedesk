@@ -1200,8 +1200,14 @@
 
     <!-- LOANS -->
     <div class="page" id="page-loans">
+      <div class="metrics-grid" id="loans-kpi" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr);"></div>
+      <div class="filter-bar" style="margin-bottom:12px;">
+        <select id="loanEmpFilter" multiple style="min-width:260px;height:80px;border-radius:var(--radius);border:0.5px solid var(--border);padding:4px 8px;font-size:13px;" onchange="renderLoans()">
+        </select>
+        <button class="btn btn-sm" onclick="clearLoanFilter()">Clear Filter</button>
+      </div>
       <div class="card"><div class="table-wrap"><table>
-        <thead><tr><th>Employee</th><th>Opening Given</th><th>Opening Taken</th><th>Total Given</th><th>Total Taken</th><th>Net Outstanding</th></tr></thead>
+        <thead><tr><th>Employee</th><th>Opening Given</th><th>Opening Taken</th><th>Total Disbursed</th><th>Total Received</th><th>Net Outstanding</th></tr></thead>
         <tbody id="loansTable"><tr><td colspan="6"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
       </table></div></div>
     </div>
@@ -2631,9 +2637,14 @@ function rebuildPageSkeleton(page) {
       </table></div></div>`,
 
     loans: `
-      <div class="filter-bar">
+      <div class="metrics-grid" id="loans-kpi" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr);"></div>
+      <div class="filter-bar" style="margin-bottom:12px;">
+        <select id="loanEmpFilter" multiple style="min-width:260px;height:80px;border-radius:var(--radius);border:0.5px solid var(--border);padding:4px 8px;font-size:13px;" onchange="renderLoans()">
+        </select>
+        <button class="btn btn-sm" onclick="clearLoanFilter()">Clear Filter</button>
+      </div>
       <div class="card"><div class="table-wrap"><table>
-        <thead><tr><th>Employee</th><th>Opening Given</th><th>Opening Taken</th><th>Total Given</th><th>Total Taken</th><th>Net Outstanding</th></tr></thead>
+        <thead><tr><th>Employee</th><th>Opening Given</th><th>Opening Taken</th><th>Total Disbursed</th><th>Total Received</th><th>Net Outstanding</th></tr></thead>
         <tbody id="loansTable"><tr><td colspan="6"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
       </table></div></div>`,
 
@@ -4920,24 +4931,75 @@ function renderLoans() {
   if (!tbody) return;
 
   if (!DATA.loans.length) {
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">💰</div><p>No loan records. Loan records are created automatically when you tag a payment as Loan type.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">💰</div><p>No loan records found.</p></div></td></tr>';
     return;
   }
 
-  tbody.innerHTML = DATA.loans
-    .map(l => {
-      const s = getEmployeeLoanSummary(l.EmployeeID);
-      const netStyle = s.net > 0 ? 'color:var(--danger);' : s.net < 0 ? 'color:var(--success);' : '';
-      const netLabel = s.net > 0 ? '−₹' + fmtNum(s.net) : s.net < 0 ? '+₹' + fmtNum(Math.abs(s.net)) : '₹0 (Settled)';
-      return '<tr>' +
-        '<td><a href="javascript:void(0)" onclick="showLoanStatement(this.dataset.id, decodeURIComponent(this.dataset.name))" data-id="' + l.EmployeeID + '" data-name="' + encodeURIComponent(l.EmployeeName||'') + '" style="font-weight:500;text-decoration:underline;text-decoration-style:dotted;">' + (l.EmployeeName || '—') + '</a></td>' +
-        '<td class="text-right" style="color:var(--text-muted);">₹' + fmtNum(s.openingGiven) + '</td>' +
-        '<td class="text-right" style="color:var(--text-muted);">₹' + fmtNum(s.openingTaken) + '</td>' +
-        '<td class="text-right text-success">₹' + fmtNum(s.totalGiven) + '</td>' +
-        '<td class="text-right text-danger">₹' + fmtNum(s.totalTaken) + '</td>' +
-        '<td class="text-right" style="' + netStyle + '"><strong>' + netLabel + '</strong></td>' +
-        '</tr>';
-    }).join('');
+  // Populate multiselect filter if empty
+  const sel = document.getElementById('loanEmpFilter');
+  if (sel && sel.options.length === 0) {
+    DATA.loans.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l.EmployeeID;
+      opt.textContent = l.EmployeeName || l.EmployeeID;
+      sel.appendChild(opt);
+    });
+  }
+
+  // Get selected employees (empty = show all)
+  const selected = sel ? [...sel.selectedOptions].map(o => o.value) : [];
+  const filtered = selected.length > 0
+    ? DATA.loans.filter(l => selected.includes(l.EmployeeID))
+    : DATA.loans;
+
+  // Compute aggregates across ALL employees for KPIs
+  let kpiOpeningGiven = 0, kpiOpeningTaken = 0, kpiTotalDisbursed = 0, kpiTotalReceived = 0;
+  DATA.loans.forEach(l => {
+    const s = getEmployeeLoanSummary(l.EmployeeID);
+    kpiOpeningGiven    += s.openingGiven;
+    kpiOpeningTaken    += s.openingTaken;
+    kpiTotalDisbursed  += s.totalGiven;
+    kpiTotalReceived   += s.totalTaken;
+  });
+  const kpiNet = kpiTotalDisbursed - kpiTotalReceived;
+
+  // Render KPI cards
+  const kpiEl = document.getElementById('loans-kpi');
+  if (kpiEl) {
+    kpiEl.innerHTML =
+      '<div class="metric-card"><div class="metric-label">Opening Balance (Given)</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(kpiOpeningGiven) + '</div><div class="metric-sub">As of Apr 1 2026</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Opening Balance (Received)</div><div class="metric-value text-success" style="font-size:18px;">₹' + fmtNum(kpiOpeningTaken) + '</div><div class="metric-sub">As of Apr 1 2026</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Total Disbursed</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(kpiTotalDisbursed) + '</div><div class="metric-sub">Opening + all transactions</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Total Received</div><div class="metric-value text-success" style="font-size:18px;">₹' + fmtNum(kpiTotalReceived) + '</div><div class="metric-sub">Opening + all transactions</div></div>';
+  }
+
+  // Render table rows
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><p>No employees match the filter.</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(l => {
+    const s = getEmployeeLoanSummary(l.EmployeeID);
+    const netStyle = s.net > 0 ? 'color:var(--danger);' : s.net < 0 ? 'color:var(--success);' : '';
+    const netLabel = s.net > 0 ? '−₹' + fmtNum(s.net) + ' <span style="font-size:11px;font-weight:400;">(emp owes co.)</span>' :
+                     s.net < 0 ? '+₹' + fmtNum(Math.abs(s.net)) + ' <span style="font-size:11px;font-weight:400;">(co. owes emp.)</span>' :
+                     '<span style="color:var(--text-hint);">Settled</span>';
+    return '<tr>' +
+      '<td><a href="javascript:void(0)" onclick="showLoanStatement(this.dataset.id, decodeURIComponent(this.dataset.name))" data-id="' + l.EmployeeID + '" data-name="' + encodeURIComponent(l.EmployeeName||'') + '" style="font-weight:500;text-decoration:underline;text-decoration-style:dotted;">' + (l.EmployeeName || '—') + '</a></td>' +
+      '<td class="text-right" style="color:var(--text-muted);">₹' + fmtNum(s.openingGiven) + '</td>' +
+      '<td class="text-right" style="color:var(--text-muted);">₹' + fmtNum(s.openingTaken) + '</td>' +
+      '<td class="text-right text-danger">₹' + fmtNum(s.totalGiven) + '</td>' +
+      '<td class="text-right text-success">₹' + fmtNum(s.totalTaken) + '</td>' +
+      '<td class="text-right" style="' + netStyle + '"><strong>' + netLabel + '</strong></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function clearLoanFilter() {
+  const sel = document.getElementById('loanEmpFilter');
+  if (sel) { [...sel.options].forEach(o => o.selected = false); }
+  renderLoans();
 }
 
 function showLoanStatement(empId, empName) {
@@ -5989,20 +6051,31 @@ function getPaymentIntegrityIssues() {
   });
 
   // ── Check 4: Payment amount vs sum of tagged transactions ──
+  // For salary payments with loan deduction: payment = salary - deduction (not salary alone)
+  // LoanDeduction is a book entry — actual bank outflow = salary expense - deduction
   DATA.payments.forEach(p => {
     const txns = txnsByPayment[p.ID] || [];
-    if (!txns.length) return; // untagged — caught by pending tagging tab
-    const taggedTotal = round2(txns.reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0));
+    if (!txns.length) return;
+
     const payAmt = round2(parseFloat(p.AmountINR || 0));
-    const diff = round2(Math.abs(payAmt - taggedTotal));
+    const deductionAmt = round2(txns.filter(t => t.RefType === 'LoanDeduction').reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0));
+    const cashTxns = txns.filter(t => t.RefType !== 'LoanDeduction');
+    if (!cashTxns.length) return;
+
+    const taggedTotal = round2(cashTxns.reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0));
+    // Expected bank outflow = tagged cash transactions - any loan deductions
+    const expectedAmt = round2(taggedTotal - deductionAmt);
+    const diff = round2(Math.abs(payAmt - expectedAmt));
+
     if (diff > 0.5) {
+      const deductionNote = deductionAmt > 0 ? ' (incl. ₹' + fmtNum(deductionAmt) + ' loan deduction)' : '';
       issues.push({
         type: 'Type 4 — Amount Mismatch', severity: diff > 1000 ? 'High' : 'Medium',
         paymentDate: p.Date, paymentDesc: p.Description,
         paymentAmt: payAmt, refType: p.Type,
-        refLabel: txns.map(t => t.RefLabel || t.RefType).join(', '),
-        txnAmt: taggedTotal,
-        issue: 'Payment ₹' + fmtNum(payAmt) + ' ≠ Tagged total ₹' + fmtNum(taggedTotal) + ' (diff ₹' + fmtNum(diff) + ')'
+        refLabel: cashTxns.map(t => t.RefLabel || t.RefType).join(', '),
+        txnAmt: expectedAmt,
+        issue: 'Payment ₹' + fmtNum(payAmt) + ' ≠ Expected ₹' + fmtNum(expectedAmt) + deductionNote + ' (diff ₹' + fmtNum(diff) + ')'
       });
     }
   });
