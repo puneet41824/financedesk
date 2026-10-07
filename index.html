@@ -1395,7 +1395,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Date</th><th>Sr.No.</th><th>Description</th><th>Amount</th><th>Type</th><th>Category</th><th>Subcategory</th><th>Net Amount</th><th>Status</th><th></th></tr>
+              <tr><th>Date</th><th>Merchant</th><th>Description</th><th>Base Amount</th><th>GST</th><th>Net Payable</th><th>Category</th><th>Subcategory</th><th>Status</th><th></th></tr>
             </thead>
             <tbody id="ccTable">
               <tr><td colspan="10"><div class="empty-state"><p>Loading...</p></div></td></tr>
@@ -5277,6 +5277,113 @@ async function saveCurrencyRates() {
 // ═══════════════════════════════════════════════════════
 // OPERATIONS DASHBOARD
 // ═══════════════════════════════════════════════════════
+
+function getLoanIntegrityIssues() {
+  const issues = [];
+  DATA.payments.forEach(p => {
+    if (!p.ID) return;
+    const txns = DATA.transactions.filter(t => t.PaymentID === p.ID && t.RefType === 'Loan');
+    txns.forEach(t => {
+      const loan = DATA.loans.find(l => l.ID === t.RefID);
+      if (!loan) return;
+      // Inward payment → should be Received (employee paying company back)
+      // Outward payment → should be Disbursed (company giving employee loan)
+      const expectedDir = (p.Type === 'Inward') ? 'Received' : 'Disbursed';
+      const actualDir = t.LoanDirection || loan.Direction || '';
+      if (actualDir && actualDir !== expectedDir) {
+        issues.push({
+          date: p.Date,
+          paymentDesc: p.Description,
+          paymentType: p.Type,
+          paymentAmt: p.AmountINR,
+          refType: 'Loan',
+          empName: loan.EmployeeName || loan.Name || t.RefID,
+          txnAmt: t.Amount,
+          issue: 'Payment is ' + p.Type + ' but loan direction is "' + actualDir + '" (expected "' + expectedDir + '")'
+        });
+      }
+    });
+  });
+  return issues;
+}
+
+function getPaymentIntegrityIssues() {
+  const issues = [];
+  DATA.payments.forEach(p => {
+    if (!p.ID) return;
+    const txns = DATA.transactions.filter(t => t.PaymentID === p.ID);
+
+    // Check 1: Payment has no transactions at all (and not a loan type)
+    if (txns.length === 0 && p.Type !== 'Loan') {
+      issues.push({
+        type: 'No Transactions',
+        severity: 'Medium',
+        paymentDate: p.Date,
+        paymentDesc: p.Description,
+        paymentAmt: p.AmountINR,
+        refType: '—',
+        refLabel: '—',
+        txnAmt: '—',
+        issue: 'Payment has no tagged transactions'
+      });
+      return;
+    }
+
+    // Check 2: Sum of tagged amounts doesn't match payment amount
+    const txnTotal = txns.reduce((s, t) => s + parseFloat(t.Amount || 0), 0);
+    const payAmt = parseFloat(p.AmountINR || 0);
+    if (payAmt > 0 && Math.abs(txnTotal - payAmt) > 1) {
+      issues.push({
+        type: 'Amount Mismatch',
+        severity: 'High',
+        paymentDate: p.Date,
+        paymentDesc: p.Description,
+        paymentAmt: payAmt,
+        refType: txns.map(t => t.RefType).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '—',
+        refLabel: txns.length + ' transaction(s)',
+        txnAmt: txnTotal,
+        issue: 'Tagged total ₹' + fmtNum(txnTotal) + ' ≠ payment ₹' + fmtNum(payAmt)
+      });
+    }
+
+    // Check 3: Transaction references a non-existent invoice/expense
+    txns.forEach(t => {
+      if (t.RefType === 'Invoice') {
+        const inv = DATA.invoices.find(i => i.ID === t.RefID);
+        if (!inv) {
+          issues.push({
+            type: 'Broken Link',
+            severity: 'High',
+            paymentDate: p.Date,
+            paymentDesc: p.Description,
+            paymentAmt: p.AmountINR,
+            refType: 'Invoice',
+            refLabel: t.RefID,
+            txnAmt: t.Amount,
+            issue: 'Linked invoice ID not found'
+          });
+        }
+      } else if (t.RefType === 'Expense') {
+        const exp = DATA.expenses.find(e => e.ID === t.RefID);
+        if (!exp) {
+          issues.push({
+            type: 'Broken Link',
+            severity: 'High',
+            paymentDate: p.Date,
+            paymentDesc: p.Description,
+            paymentAmt: p.AmountINR,
+            refType: 'Expense',
+            refLabel: t.RefID,
+            txnAmt: t.Amount,
+            issue: 'Linked expense ID not found'
+          });
+        }
+      }
+    });
+  });
+  return issues;
+}
+
 let currentOpsTab = 'tagging';
 
 function renderOperations() {
