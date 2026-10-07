@@ -1207,7 +1207,7 @@
             <span id="loanEmpBtnLabel">All Employees</span>
             <span style="margin-left:8px;">▾</span>
           </button>
-          <div id="loanEmpDropdown" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);min-width:240px;max-height:280px;overflow-y:auto;padding:4px 0;">
+          <div id="loanEmpDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);min-width:260px;max-height:300px;overflow-y:auto;padding:4px 0;">
             <div id="loanEmpCheckboxes"></div>
           </div>
         </div>
@@ -1390,12 +1390,12 @@
 
     <!-- CREDIT CARD -->
     <div class="page" id="page-creditcard">
-      <div class="metrics-grid" id="cc-summary" style="margin-bottom:16px;"></div>
+      <div class="metrics-grid" id="cc-summary" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr);"></div>
       <div class="card">
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Date</th><th>Merchant</th><th>Category</th><th>Currency</th><th>Base Amt</th><th>GST</th><th>TDS</th><th>Net Payable</th><th>Status</th><th></th></tr>
+              <tr><th>Date</th><th>Sr.No.</th><th>Description</th><th>Amount</th><th>Type</th><th>Category</th><th>Subcategory</th><th>Net Amount</th><th>Status</th><th></th></tr>
             </thead>
             <tbody id="ccTable">
               <tr><td colspan="10"><div class="empty-state"><p>Loading...</p></div></td></tr>
@@ -1827,47 +1827,7 @@
   </div>
 </div>
 
-<!-- CREDIT CARD MODAL -->
-<div class="modal-overlay" id="ccModal">
-  <div class="modal" style="max-width:560px;">
-    <div class="modal-header">
-      <h3 id="ccModalTitle">Add CC Entry</h3>
-      <button class="btn btn-sm" onclick="closeModal('ccModal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group"><label>Date *</label><input type="date" id="cc-date"></div>
-        <div class="form-group"><label>Currency</label>
-          <select id="cc-currency" onchange="calcCC()"></select>
-        </div>
-        <div class="form-group full"><label>Merchant *</label><input type="text" id="cc-merchant" placeholder="Merchant name"></div>
-        <div class="form-group"><label>Category *</label>
-          <select id="cc-cat" onchange="onCCCatChange()"><option value="">Select category...</option></select>
-        </div>
-        <div class="form-group"><label>Subcategory *</label>
-          <select id="cc-subcat"><option value="">Select subcategory...</option></select>
-        </div>
-        <div class="form-group full"><label>Description</label><input type="text" id="cc-desc" placeholder="Optional details"></div>
-        <div class="form-group"><label>Base Amount *</label><input type="number" id="cc-amount" placeholder="0" min="0" oninput="calcCC()"></div>
-        <div class="form-group"><label>GST Rate (%)</label><input type="number" id="cc-gst" placeholder="0" min="0" value="0" oninput="calcCC()"></div>
-        <div class="form-group"><label>TDS Rate (%)</label><input type="number" id="cc-tds" placeholder="0" min="0" value="0" oninput="calcCC()"></div>
-        <div class="form-group full" id="cc-breakdown" style="display:none;">
-          <div style="background:var(--bg-secondary);border-radius:var(--radius);padding:12px;font-size:12px;">
-            <div class="breakdown-row"><span>Base Amount</span><span id="cc-bd-base">—</span></div>
-            <div class="breakdown-row"><span>+ GST</span><span id="cc-bd-gst">—</span></div>
-            <div class="breakdown-row"><span>− TDS</span><span id="cc-bd-tds">—</span></div>
-            <div class="breakdown-row total"><span>Net Payable</span><span id="cc-bd-net">—</span></div>
-          </div>
-        </div>
-        <div class="form-group full"><label>Notes</label><textarea id="cc-notes" placeholder="Optional notes"></textarea></div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal('ccModal')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveCCEntry()" id="saveCCBtn">Save Entry</button>
-    </div>
-  </div>
-</div>
+<!-- CC Tag Modal rendered dynamically by openCCTagModal() -->
 
 <!-- EMPLOYEE MODAL -->
 <div class="modal-overlay" id="employeeModal">
@@ -2088,7 +2048,7 @@ const HEADERS = {
   currencyRates: ['Currency','RateToINR'],
   employees: ['ID','Name','MonthlySalary','AnnualBonus','JoiningDate','Status','Notes'],
   settings: ['Key','Value'],
-  creditcard: ['ID','Date','Merchant','Category','Subcategory','Description','Currency','BaseAmount','GSTRate','GSTAmount','TDSRate','TDSAmount','TotalPayable','NetPayable','INRValue','RateUsed','Status','Notes'],
+  creditcard: ['ID','Date','SrNo','Description','Amount','BillingAmountSign','Status','Category','Subcategory','GSTRate','GSTAmount','TDSRate','TDSAmount','NetAmount','Notes'],
   budgetIncome: ['ID','Client','Project','Month','BudgetAmount'],
   budgetExpense: ['ID','Category','Subcategory','Month','BudgetAmount'],
   projects: ['ID','Name','ClientID','ClientName','Status','Description']
@@ -2495,9 +2455,8 @@ function getPageActions(page) {
     employees: '<button class="btn btn-primary" onclick="openEmployeeModal()">+ Add Employee</button>' +
              '<button class="btn" data-module="employees" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
              '<button class="btn" data-module="employees" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>',
-    creditcard: '<button class="btn btn-primary" onclick="openCCModal()">+ Add Entry</button>' +
-                '<button class="btn" data-module="creditcard" onclick="downloadTemplate(this.dataset.module)">&#8595; Template</button>' +
-                '<button class="btn" data-module="creditcard" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Bulk Upload</button>',
+    creditcard: '<button class="btn" data-module="creditcard" onclick="downloadTemplate(this.dataset.module)">&#8595; CC Statement Template</button>' +
+                '<button class="btn btn-primary" data-module="creditcard" onclick="triggerBulkUpload(this.dataset.module)">&#8593; Upload CC Statement</button>',
     comparison: '',
     projects: '<button class="btn btn-primary" onclick="openProjectModal()">+ Add Project</button>',
     budget: '<button class="btn" onclick="uploadBudget(\'income\')">&#8593; Upload Income Budget</button>' +
@@ -2654,7 +2613,7 @@ function rebuildPageSkeleton(page) {
             <span id="loanEmpBtnLabel">All Employees</span>
             <span style="margin-left:8px;">▾</span>
           </button>
-          <div id="loanEmpDropdown" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);min-width:240px;max-height:280px;overflow-y:auto;padding:4px 0;">
+          <div id="loanEmpDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);min-width:260px;max-height:300px;overflow-y:auto;padding:4px 0;">
             <div id="loanEmpCheckboxes"></div>
           </div>
         </div>
@@ -2756,9 +2715,9 @@ function rebuildPageSkeleton(page) {
       <input type="file" id="budgetFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleBudgetUpload(event)">`,
 
     creditcard: `
-      <div class="metrics-grid" id="cc-summary" style="margin-bottom:16px;"></div>
+      <div class="metrics-grid" id="cc-summary" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr);"></div>
       <div class="card"><div class="table-wrap"><table>
-        <thead><tr><th>Date</th><th>Merchant</th><th>Category</th><th>Currency</th><th>Base Amt</th><th>GST</th><th>TDS</th><th>Net Payable</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Sr.No.</th><th>Description</th><th>Amount</th><th>Type</th><th>Category</th><th>Subcategory</th><th>Net Amount</th><th>Status</th><th></th></tr></thead>
         <tbody id="ccTable"><tr><td colspan="10"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
       </table></div></div>`,
 
@@ -2898,13 +2857,13 @@ const TEMPLATES = {
     notes: 'Date: YYYY-MM-DD. Category and Subcategory must exactly match values in the Categories sheet. GSTRate: 0 or 18. TDSRate: 0, 2, or 10. Vendor and PAN optional.'
   },
   creditcard: {
-    columns: ['Date','Merchant','Category','Subcategory','Description','Currency','BaseAmount','GSTRate','TDSRate','Notes'],
+    columns: ['Date','Sr.No.','Transaction Details','Amount(in Rs)','BillingAmountSign'],
     sample: [
-      ['2026-04-05','Amazon AWS','Infrastructure','Cloud','Monthly cloud bill','USD','500','0','0',''],
-      ['2026-04-10','Swiggy','Office','Office Supplies','Team lunch','INR','2500','5','0',''],
-      ['2026-04-15','Zoho','Software','Productivity','CRM subscription','INR','4999','18','0','']
+      ['2026-04-05','TXN001','Amazon AWS Cloud','5000',''],
+      ['2026-04-10','TXN002','Swiggy Team Lunch','2500',''],
+      ['2026-04-15','TXN003','Refund from Zoho','4999','CR']
     ],
-    notes: 'Date format: YYYY-MM-DD. BaseAmount is pre-GST amount. GSTRate and TDSRate as percentage numbers.'
+    notes: 'BillingAmountSign: Leave blank for debits (expenses). Enter CR for credits (refunds/reversals). Amount is always positive.'
   },
   employees: {
     columns: ['Name','MonthlySalary','AnnualBonus','JoiningDate','Status','Notes'],
@@ -4063,11 +4022,18 @@ function renderTagRows() {
         '</div>'
         : '') +
       (row.type === 'Loan' && row.ref ?
-        '<div style="margin-top:8px;padding:8px 10px;background:var(--bg-secondary);border-radius:var(--radius);font-size:12px;display:flex;align-items:center;gap:12px;">' +
-        '<span style="color:var(--text-muted);">Direction:</span>' +
-        '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="loan-dir-' + i + '" value="Disbursed" ' + (row.loanDir !== 'Received' ? 'checked' : '') + ' onchange="payTagRows[' + i + '].loanDir=this.value"> Disbursed (company paid employee)</label>' +
-        '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="loan-dir-' + i + '" value="Received" ' + (row.loanDir === 'Received' ? 'checked' : '') + ' onchange="payTagRows[' + i + '].loanDir=this.value"> Received (employee paid company)</label>' +
-        '</div>' : '') +
+        (function() {
+          // Auto-set loanDir based on payment direction if not yet explicitly chosen
+          if (!row.loanDir) {
+            row.loanDir = (payType === 'Inward') ? 'Received' : 'Disbursed';
+          }
+          return '<div style="margin-top:8px;padding:8px 10px;background:var(--bg-secondary);border-radius:var(--radius);font-size:12px;display:flex;align-items:center;gap:12px;">' +
+          '<span style="color:var(--text-muted);">Direction:</span>' +
+          '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="loan-dir-' + i + '" value="Disbursed" ' + (row.loanDir === 'Disbursed' ? 'checked' : '') + ' onchange="payTagRows[' + i + '].loanDir=this.value"> Disbursed (company paid employee)</label>' +
+          '<label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="radio" name="loan-dir-' + i + '" value="Received" ' + (row.loanDir === 'Received' ? 'checked' : '') + ' onchange="payTagRows[' + i + '].loanDir=this.value"> Received (employee paid company)</label>' +
+          '</div>';
+        })()
+        : '') +
       (isNewExpense ? '<div id="quick-expense-' + i + '" style="margin-top:10px;padding:10px;background:var(--bg);border-radius:var(--radius);border:0.5px solid var(--border);">' +
         '<div style="font-size:11px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">New Expense</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
@@ -5020,12 +4986,12 @@ function renderLoans() {
   const checkboxContainer = document.getElementById('loanEmpCheckboxes');
   if (checkboxContainer && checkboxContainer.children.length === 0) {
     checkboxContainer.innerHTML = DATA.loans.map(l =>
-      '<label style="display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:13px;border-bottom:0.5px solid var(--border-light);">' +
-      '<input type="checkbox" value="' + l.EmployeeID + '" onchange="updateLoanEmpBtnLabel();renderLoans()"> ' +
-      (l.EmployeeName || l.EmployeeID) +
-      '</label>'
+      '<label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:13px;white-space:nowrap;border-bottom:0.5px solid var(--border-light);">' +
+      '<input type="checkbox" value="' + l.EmployeeID + '" onchange="updateLoanEmpBtnLabel();renderLoans()" style="width:14px;height:14px;flex-shrink:0;cursor:pointer;"> ' +
+      '<span style="white-space:nowrap;">' + (l.EmployeeName || l.EmployeeID) + '</span></label>'
     ).join('');
   }
+
 
   // Get selected employees
   const selected = getLoanEmpSelected();
@@ -5744,433 +5710,218 @@ function renderReconciliation(bodyId, dateId) {
       '</div>' +
     '</div>';
 }
-
 // ═══════════════════════════════════════════════════════
 // CREDIT CARD
 // ═══════════════════════════════════════════════════════
 
 function getTotalCCPaid() {
-  // Sum all payments tagged as CreditCard type
   return DATA.transactions
     .filter(t => t.RefType === 'CreditCard')
     .reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
 }
 
-function getTotalCCExpenses() {
-  return DATA.creditcard.reduce((s, e) => s + parseFloat(e.NetPayable || 0), 0);
-}
-
 function renderCreditCard() {
-  const totalPaid = getTotalCCPaid();
-  const totalExp = getTotalCCExpenses();
-  const balance = totalPaid - totalExp;
+  const entries = DATA.creditcard;
+  const debits = entries.filter(e => (e.BillingAmountSign || '').trim().toUpperCase() !== 'CR');
+  const credits = entries.filter(e => (e.BillingAmountSign || '').trim().toUpperCase() === 'CR');
+  const totalDebit = debits.reduce((s, e) => s + parseFloat(e.Amount || 0), 0);
+  const totalCredit = credits.reduce((s, e) => s + parseFloat(e.Amount || 0), 0);
+  const totalCCPaid = getTotalCCPaid();
+  const untagged = entries.filter(e => e.Status === 'Untagged' || !e.Category);
 
   const summaryEl = document.getElementById('cc-summary');
   if (summaryEl) {
     summaryEl.innerHTML =
-      '<div class="metric-card"><div class="metric-label">Total CC Payments Made</div><div class="metric-value text-success">₹' + fmtNum(totalPaid) + '</div><div class="metric-sub">From bank payments tagged as CC</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Total CC Expenses Entered</div><div class="metric-value text-danger">₹' + fmtNum(totalExp) + '</div><div class="metric-sub">Sum of all CC statement entries</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Outstanding / Unallocated</div><div class="metric-value ' + (Math.abs(balance) < 1 ? '' : balance > 0 ? 'text-warning' : 'text-danger') + '">₹' + fmtNum(Math.abs(balance)) + '</div>' +
-      '<div class="metric-sub">' + (Math.abs(balance) < 1 ? 'Fully reconciled ✓' : balance > 0 ? 'Payments exceed expenses' : 'Expenses exceed payments') + '</div></div>';
+      '<div class="metric-card"><div class="metric-label">Total Debits</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(totalDebit) + '</div><div class="metric-sub">' + debits.length + ' transactions</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Total Credits (CR)</div><div class="metric-value text-success" style="font-size:18px;">₹' + fmtNum(totalCredit) + '</div><div class="metric-sub">' + credits.length + ' reversals</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Bank Payments Made</div><div class="metric-value" style="font-size:18px;">₹' + fmtNum(totalCCPaid) + '</div><div class="metric-sub">Tagged as CC in payments</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Needs Tagging</div><div class="metric-value ' + (untagged.length > 0 ? 'text-warning' : 'text-success') + '" style="font-size:18px;">' + untagged.length + '</div><div class="metric-sub">Uncategorised entries</div></div>';
   }
 
   const tbody = document.getElementById('ccTable');
   if (!tbody) return;
 
-  const rows = [...DATA.creditcard].sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
+  const sorted = [...entries].sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
 
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">🃏</div><p>No credit card entries yet. Upload a CC statement or add entries manually.</p></div></td></tr>';
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">🃏</div><p>No credit card entries yet. Upload your CC statement using the ↑ Upload CC Statement button.</p></div></td></tr>';
     return;
   }
 
-  tbody.innerHTML = rows.map(e => {
-    const idx = DATA.creditcard.indexOf(e);
+  tbody.innerHTML = sorted.map(e => {
+    const isCR = (e.BillingAmountSign || '').trim().toUpperCase() === 'CR';
+    const isTagged = e.Category && e.Status !== 'Untagged';
+    const netAmt = parseFloat(e.NetAmount || e.Amount || 0);
     return '<tr>' +
       '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(e.Date) + '</td>' +
-      '<td><strong style="font-weight:500;">' + (e.Merchant || '—') + '</strong></td>' +
-      '<td style="font-size:12px;">' + (e.Category || '—') + (e.Subcategory ? '<br><span style="color:var(--text-muted);">' + e.Subcategory + '</span>' : '') + '</td>' +
-      '<td><span class="badge badge-neutral">' + (e.Currency || 'INR') + '</span></td>' +
-      '<td class="text-right">' + fmtNum(e.BaseAmount) + '</td>' +
-      '<td class="text-right" style="color:var(--text-muted);">' + (parseFloat(e.GSTAmount||0) ? fmtNum(e.GSTAmount) : '—') + '</td>' +
-      '<td class="text-right text-danger">' + (parseFloat(e.TDSAmount||0) ? fmtNum(e.TDSAmount) : '—') + '</td>' +
-      '<td class="text-right text-success"><strong>' + fmtNum(e.NetPayable) + '</strong></td>' +
-      '<td>' + statusBadge(e.Status || 'Paid') + '</td>' +
+      '<td style="font-size:11px;color:var(--text-hint);">' + (e.SrNo || '—') + '</td>' +
+      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (e.Description||'') + '">' + (e.Description || '—') + '</td>' +
+      '<td class="text-right ' + (isCR ? 'text-success' : 'text-danger') + '">₹' + fmtNum(e.Amount) + '</td>' +
+      '<td>' + (isCR ? '<span class="badge badge-success">CR</span>' : '<span class="badge badge-warning">DR</span>') + '</td>' +
+      '<td style="font-size:12px;">' + (e.Category || '<span style="color:var(--text-hint);">—</span>') + '</td>' +
+      '<td style="font-size:12px;color:var(--text-muted);">' + (e.Subcategory || '—') + '</td>' +
+      '<td class="text-right">' + (netAmt ? '₹' + fmtNum(netAmt) : '—') + '</td>' +
+      '<td>' + (isTagged ? '<span class="badge badge-success">Tagged</span>' : '<span class="badge badge-warning">Needs Tagging</span>') + '</td>' +
       '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
-        '<button class="btn btn-sm" onclick="openCCModal(' + idx + ')">Edit</button>' +
-        '<button class="btn btn-sm btn-danger" onclick="deleteRecord(\'creditcard\',\'' + e.ID + '\',' + idx + ')">×</button>' +
+        '<button class="btn btn-sm btn-primary" data-id="' + e.ID + '" onclick="openCCTagModal(this.dataset.id)">Tag</button>' +
+        '<button class="btn btn-sm btn-danger" data-id="' + e.ID + '" data-idx="' + DATA.creditcard.indexOf(e) + '" onclick="deleteRecord(\'creditcard\',this.dataset.id,parseInt(this.dataset.idx))">×</button>' +
       '</div></td>' +
       '</tr>';
   }).join('');
 }
 
-function openCCModal(idx) {
-  editingId = idx !== undefined ? DATA.creditcard[idx].ID : null;
-  document.getElementById('ccModalTitle').textContent = editingId ? 'Edit CC Entry' : 'Add CC Entry';
-  const e = editingId ? DATA.creditcard[idx] : {};
+// ── CC TAGGING MODAL ────────────────────────────────────
+let ccTaggingId = null;
 
-  // Populate currency dropdown
-  const curSel = document.getElementById('cc-currency');
-  curSel.innerHTML = DATA.currencyRates.map(r => '<option value="' + r.Currency + '"' + (r.Currency === (e.Currency || 'INR') ? ' selected' : '') + '>' + r.Currency + '</option>').join('');
+function openCCTagModal(id) {
+  const entry = DATA.creditcard.find(e => e.ID === id);
+  if (!entry) return;
+  ccTaggingId = id;
 
-  // Populate category dropdown
+  const isCR = (entry.BillingAmountSign || '').trim().toUpperCase() === 'CR';
+  const amount = parseFloat(entry.Amount || 0);
+
+  // Build modal on the fly
+  const existing = document.getElementById('ccTagModal');
+  if (existing) existing.remove();
+
   const cats = [...new Set(DATA.categories.map(c => c.Category))].sort();
-  const catSel = document.getElementById('cc-cat');
-  catSel.innerHTML = '<option value="">Select category...</option>' + cats.map(c => '<option value="' + c + '"' + (c === e.Category ? ' selected' : '') + '>' + c + '</option>').join('');
-  onCCCatChange(e.Subcategory);
+  const catOptions = cats.map(c => '<option value="' + c + '"' + (c === entry.Category ? ' selected' : '') + '>' + c + '</option>').join('');
 
-  setVal('cc-date', e.Date || today());
-  setVal('cc-merchant', e.Merchant || '');
-  setVal('cc-desc', e.Description || '');
-  setVal('cc-amount', e.BaseAmount || '');
-  setVal('cc-gst', e.GSTRate || '0');
-  setVal('cc-tds', e.TDSRate || '0');
-  setVal('cc-notes', e.Notes || '');
-  calcCC();
-  openModal('ccModal');
+  const subOptions = entry.Category
+    ? DATA.categories.filter(c => c.Category === entry.Category).map(c =>
+        '<option value="' + c.Subcategory + '"' + (c.Subcategory === entry.Subcategory ? ' selected' : '') + '>' + c.Subcategory + '</option>'
+      ).join('')
+    : '';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.id = 'ccTagModal';
+  overlay.style.zIndex = '300';
+  overlay.innerHTML =
+    '<div class="modal" style="max-width:500px;">' +
+      '<div class="modal-header">' +
+        '<h3>' + (isCR ? '↑ CR — Tag Refund/Credit' : '↓ DR — Tag Expense') + '</h3>' +
+        '<button class="btn btn-sm" onclick="document.getElementById(\'ccTagModal\').remove()">✕</button>' +
+      '</div>' +
+      '<div class="modal-body">' +
+        '<div style="background:var(--bg-secondary);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:13px;">' +
+          '<strong>' + (entry.Description || '—') + '</strong>' +
+          '<span style="float:right;' + (isCR ? 'color:var(--success)' : 'color:var(--danger)') + ';">₹' + fmtNum(amount) + (isCR ? ' CR' : ' DR') + '</span>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + fmtDate(entry.Date) + (entry.SrNo ? ' · ' + entry.SrNo : '') + '</div>' +
+        '</div>' +
+        '<div class="form-grid">' +
+          '<div class="form-group"><label>Category *</label>' +
+            '<select id="cc-tag-cat" onchange="onCCTagCatChange()">' +
+              '<option value="">Select category...</option>' + catOptions +
+            '</select>' +
+          '</div>' +
+          '<div class="form-group"><label>Subcategory *</label>' +
+            '<select id="cc-tag-subcat">' +
+              '<option value="">Select subcategory...</option>' + subOptions +
+            '</select>' +
+          '</div>' +
+          (isCR ? '' :
+          '<div class="form-group"><label>GST Rate (%)</label><input type="number" id="cc-tag-gst" value="' + (entry.GSTRate || 0) + '" min="0" oninput="calcCCTag(' + amount + ')"></div>' +
+          '<div class="form-group"><label>TDS Rate (%)</label><input type="number" id="cc-tag-tds" value="' + (entry.TDSRate || 0) + '" min="0" oninput="calcCCTag(' + amount + ')"></div>' +
+          '<div class="form-group full" id="cc-tag-breakdown" style="background:var(--bg-secondary);border-radius:var(--radius);padding:10px 14px;font-size:12px;">' +
+            '<div class="breakdown-row"><span>Base Amount</span><span>₹' + fmtNum(amount) + '</span></div>' +
+            '<div class="breakdown-row"><span>+ GST</span><span id="cc-tag-gst-amt">—</span></div>' +
+            '<div class="breakdown-row"><span>− TDS</span><span id="cc-tag-tds-amt">—</span></div>' +
+            '<div class="breakdown-row total"><span>Net Payable</span><span id="cc-tag-net">₹' + fmtNum(amount) + '</span></div>' +
+          '</div>') +
+          '<div class="form-group full"><label>Notes</label><input type="text" id="cc-tag-notes" value="' + (entry.Notes || '') + '" placeholder="Optional"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-footer">' +
+        '<button class="btn" onclick="document.getElementById(\'ccTagModal\').remove()">Cancel</button>' +
+        '<button class="btn btn-primary" id="saveCCTagBtn" onclick="saveCCTag()">Save Tagging</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  // Pre-select subcategory if category already set
+  if (entry.Category) onCCTagCatChange(entry.Subcategory);
+  calcCCTag(amount);
 }
 
-function onCCCatChange(preselectSubcat) {
-  const cat = getVal('cc-cat');
+function onCCTagCatChange(preselect) {
+  const cat = document.getElementById('cc-tag-cat')?.value;
+  const subSel = document.getElementById('cc-tag-subcat');
+  if (!subSel) return;
   const subcats = DATA.categories.filter(c => c.Category === cat).map(c => c.Subcategory).sort();
-  const subSel = document.getElementById('cc-subcat');
-  subSel.innerHTML = '<option value="">Select subcategory...</option>' + subcats.map(s => '<option value="' + s + '"' + (s === preselectSubcat ? ' selected' : '') + '>' + s + '</option>').join('');
+  subSel.innerHTML = '<option value="">Select subcategory...</option>' +
+    subcats.map(s => '<option value="' + s + '"' + (s === preselect ? ' selected' : '') + '>' + s + '</option>').join('');
 }
 
-function calcCC() {
-  const base = parseFloat(getVal('cc-amount')) || 0;
-  if (!base) { document.getElementById('cc-breakdown').style.display = 'none'; return; }
-  const gstRate = parseFloat(getVal('cc-gst')) || 0;
-  const tdsRate = parseFloat(getVal('cc-tds')) || 0;
-  const gstAmt = round2(base * gstRate / 100);
-  const tdsAmt = round2(base * tdsRate / 100);
-  const net = round2(base + gstAmt - tdsAmt);
-  const currency = getVal('cc-currency');
-  const sym = currSym(currency);
-  document.getElementById('cc-breakdown').style.display = '';
-  document.getElementById('cc-bd-base').textContent = sym + fmtNum(base);
-  document.getElementById('cc-bd-gst').textContent = gstAmt ? '+' + sym + fmtNum(gstAmt) : 'Nil';
-  document.getElementById('cc-bd-tds').textContent = tdsAmt ? '−' + sym + fmtNum(tdsAmt) : 'Nil';
-  document.getElementById('cc-bd-net').textContent = sym + fmtNum(net);
+function calcCCTag(baseAmount) {
+  const gstRate = parseFloat(document.getElementById('cc-tag-gst')?.value) || 0;
+  const tdsRate = parseFloat(document.getElementById('cc-tag-tds')?.value) || 0;
+  const gstAmt = round2(baseAmount * gstRate / 100);
+  const tdsAmt = round2(baseAmount * tdsRate / 100);
+  const net = round2(baseAmount + gstAmt - tdsAmt);
+  if (document.getElementById('cc-tag-gst-amt')) document.getElementById('cc-tag-gst-amt').textContent = gstAmt ? '+₹' + fmtNum(gstAmt) : 'Nil';
+  if (document.getElementById('cc-tag-tds-amt')) document.getElementById('cc-tag-tds-amt').textContent = tdsAmt ? '−₹' + fmtNum(tdsAmt) : 'Nil';
+  if (document.getElementById('cc-tag-net')) document.getElementById('cc-tag-net').textContent = '₹' + fmtNum(net);
 }
 
-async function saveCCEntry() {
-  const date = getVal('cc-date');
-  const merchant = getVal('cc-merchant').trim();
-  const cat = getVal('cc-cat');
-  const subcat = getVal('cc-subcat');
-  const base = parseFloat(getVal('cc-amount')) || 0;
-  if (!date || !merchant || !cat || !subcat || !base) { showToast('Date, merchant, category, subcategory and amount are required'); return; }
+async function saveCCTag() {
+  const entry = DATA.creditcard.find(e => e.ID === ccTaggingId);
+  if (!entry) return;
 
-  const gstRate = parseFloat(getVal('cc-gst')) || 0;
-  const tdsRate = parseFloat(getVal('cc-tds')) || 0;
+  const cat = document.getElementById('cc-tag-cat')?.value;
+  const subcat = document.getElementById('cc-tag-subcat')?.value;
+  if (!cat || !subcat) { showToast('Category and subcategory are required'); return; }
+
+  const isCR = (entry.BillingAmountSign || '').trim().toUpperCase() === 'CR';
+  const base = parseFloat(entry.Amount || 0);
+  const gstRate = parseFloat(document.getElementById('cc-tag-gst')?.value) || 0;
+  const tdsRate = parseFloat(document.getElementById('cc-tag-tds')?.value) || 0;
   const gstAmt = round2(base * gstRate / 100);
   const tdsAmt = round2(base * tdsRate / 100);
-  const total = round2(base + gstAmt);
-  const net = round2(total - tdsAmt);
-  const currency = getVal('cc-currency') || 'INR';
-  const rate = getRate(currency);
+  const net = isCR ? base : round2(base + gstAmt - tdsAmt);
+  const notes = document.getElementById('cc-tag-notes')?.value || '';
 
-  const row = [
-    editingId || genId(), date, merchant, cat, subcat,
-    getVal('cc-desc'), currency, base, gstRate, gstAmt,
-    tdsRate, tdsAmt, total, net,
-    round2(net * rate), rate, 'Paid', getVal('cc-notes')
-  ];
+  const saveBtn = document.getElementById('saveCCTagBtn');
+  setBtnLoading(saveBtn, true);
 
-  setBtnLoading('saveCCBtn', true);
   try {
-    if (editingId) {
-      const idx = DATA.creditcard.findIndex(e => e.ID === editingId);
-      await updateRow(SHEETS.creditcard, idx, row);
-    } else {
-      await appendRow(SHEETS.creditcard, row);
-    }
+    const idx = DATA.creditcard.indexOf(entry);
+    const row = [
+      entry.ID, entry.Date, entry.SrNo, entry.Description,
+      entry.Amount, entry.BillingAmountSign, 'Tagged',
+      cat, subcat, gstRate, gstAmt, tdsRate, tdsAmt, net, notes
+    ];
+    await updateRow(SHEETS.creditcard, idx, row);
     await loadAllData();
     renderCreditCard();
-    closeModal('ccModal');
-    showToast(editingId ? 'CC entry updated' : 'CC entry saved');
-  } catch(e) {
-    showToast('Error: ' + e.message);
-  }
-  setBtnLoading('saveCCBtn', false);
+    document.getElementById('ccTagModal')?.remove();
+    showToast('CC entry tagged');
+  } catch(e) { showToast('Error: ' + e.message); }
+  finally { setBtnLoading(saveBtn, false); }
 }
 
+// ── BULK UPLOAD CC STATEMENT ────────────────────────────
 async function bulkSaveCCEntry(row, rowNum, errors) {
-  const date = row['Date'] ? String(row['Date']).trim() : '';
-  const merchant = (row['Merchant'] || '').toString().trim();
-  const cat = (row['Category'] || '').toString().trim();
-  const subcat = (row['Subcategory'] || '').toString().trim();
-  const base = parseFloat(row['BaseAmount']) || 0;
-  if (!date) { errors.push('Row ' + rowNum + ': Date is required'); return; }
-  if (!merchant) { errors.push('Row ' + rowNum + ': Merchant is required'); return; }
-  if (!cat || !subcat) { errors.push('Row ' + rowNum + ': Category and Subcategory are required'); return; }
-  if (!base) { errors.push('Row ' + rowNum + ': BaseAmount is required'); return; }
+  // Expected columns: Date, Sr.No., Transaction Details, Amount(in Rs), BillingAmountSign
+  const dateRaw = row['Date'];
+  const srNo = (row['Sr.No.'] || row['SrNo'] || row['SR.NO.'] || '').toString().trim();
+  const desc = (row['Transaction Details'] || row['Description'] || '').toString().trim();
+  const amount = parseFloat((row['Amount(in Rs)'] || row['Amount'] || '0').toString().replace(/[,₹]/g,'')) || 0;
+  const sign = (row['BillingAmountSign'] || '').toString().trim().toUpperCase();
 
-  const gstRate = parseFloat(row['GSTRate']) || 0;
-  const tdsRate = parseFloat(row['TDSRate']) || 0;
-  const gstAmt = round2(base * gstRate / 100);
-  const tdsAmt = round2(base * tdsRate / 100);
-  const total = round2(base + gstAmt);
-  const net = round2(total - tdsAmt);
-  const currency = (row['Currency'] || 'INR').toString().trim();
-  const rate = getRate(currency);
+  const date = excelDateToString(dateRaw);
+  if (!date) { errors.push('Row ' + rowNum + ': Date is required'); return; }
+  if (!amount) { errors.push('Row ' + rowNum + ': Amount is required'); return; }
 
   await appendRow(SHEETS.creditcard, [
-    genId(), date, merchant, cat, subcat,
-    (row['Description'] || '').toString().trim(),
-    currency, base, gstRate, gstAmt, tdsRate, tdsAmt, total, net,
-    round2(net * rate), rate, 'Paid', (row['Notes'] || '').toString().trim()
+    genId(), date, srNo, desc, amount, sign, 'Untagged',
+    '', '', 0, 0, 0, 0, amount, ''
   ]);
 }
 
-// ═══════════════════════════════════════════════════════
-// PAYMENT INTEGRITY CHECKS
-// ═══════════════════════════════════════════════════════
-function getLoanIntegrityIssues() {
-  const issues = [];
-  const paymentMap = Object.fromEntries(DATA.payments.map(p => [p.ID, p]));
-
-  DATA.transactions.forEach(t => {
-    if (t.RefType !== 'Disbursed' && t.RefType !== 'Received') return;
-
-    const payment = paymentMap[t.PaymentID];
-    if (!payment) return; // orphan — caught by payment integrity
-
-    const isInward = payment.Type === 'Inward';
-    const isOutward = payment.Type === 'Outward';
-
-    if (t.RefType === 'Disbursed' && isInward) {
-      // Disbursed should be Outward
-      issues.push({
-        date: payment.Date,
-        paymentDesc: payment.Description,
-        paymentType: payment.Type,
-        paymentAmt: payment.AmountINR,
-        refType: t.RefType,
-        empName: t.RefLabel || t.RefID,
-        txnAmt: t.AmountINR,
-        issue: 'Disbursed loan tagged to an Inward payment — should be Outward'
-      });
-    } else if (t.RefType === 'Received' && isOutward) {
-      // Received should be Inward
-      issues.push({
-        date: payment.Date,
-        paymentDesc: payment.Description,
-        paymentType: payment.Type,
-        paymentAmt: payment.AmountINR,
-        refType: t.RefType,
-        empName: t.RefLabel || t.RefID,
-        txnAmt: t.AmountINR,
-        issue: 'Received loan tagged to an Outward payment — should be Inward'
-      });
-    }
-  });
-
-  return issues;
-}
-function getPaymentIntegrityIssues() {
-  const issues = [];
-
-  const invoiceMap = Object.fromEntries(DATA.invoices.map(i => [i.ID, i]));
-  const expenseMap = Object.fromEntries(DATA.expenses.map(e => [e.ID, e]));
-  const loanMap    = Object.fromEntries(DATA.loans.map(l => [l.ID, l]));
-  const paymentMap = Object.fromEntries(DATA.payments.map(p => [p.ID, p]));
-
-  const VALID_REF_TYPES = ['Invoice', 'Expense', 'Disbursed', 'Received', 'LoanDeduction', 'CreditCard'];
-
-  // Group transactions by payment and by PaymentID+RefID for duplicate check
-  const txnsByPayment = {};
-  const txnKeysSeen = {};
-  DATA.transactions.forEach(t => {
-    if (!txnsByPayment[t.PaymentID]) txnsByPayment[t.PaymentID] = [];
-    txnsByPayment[t.PaymentID].push(t);
-  });
-
-  DATA.transactions.forEach(t => {
-    const payment = paymentMap[t.PaymentID];
-
-    // ── Check: Missing PaymentDate ──────────────────────
-    if (!t.PaymentDate || t.PaymentDate === '') {
-      issues.push({
-        type: 'Missing PaymentDate', severity: 'Medium',
-        paymentDate: '—', paymentDesc: payment?.Description || '—',
-        paymentAmt: payment?.AmountINR || '—',
-        refType: t.RefType, refLabel: t.RefLabel || t.RefID,
-        txnAmt: t.AmountINR,
-        issue: 'Transaction row has no PaymentDate'
-      });
-    }
-
-    // ── Check: Zero or negative amount ─────────────────
-    const amt = parseFloat(t.AmountINR || 0);
-    if (amt <= 0) {
-      issues.push({
-        type: 'Zero/Negative Amount', severity: 'High',
-        paymentDate: t.PaymentDate || '—', paymentDesc: payment?.Description || '—',
-        paymentAmt: payment?.AmountINR || '—',
-        refType: t.RefType, refLabel: t.RefLabel || t.RefID,
-        txnAmt: t.AmountINR,
-        issue: 'Transaction AmountINR is ' + t.AmountINR + ' — must be positive'
-      });
-    }
-
-    // ── Check: Invalid RefType ──────────────────────────
-    if (!VALID_REF_TYPES.includes(t.RefType)) {
-      issues.push({
-        type: 'Invalid RefType', severity: 'High',
-        paymentDate: t.PaymentDate || '—', paymentDesc: payment?.Description || '—',
-        paymentAmt: payment?.AmountINR || '—',
-        refType: t.RefType, refLabel: t.RefLabel || t.RefID,
-        txnAmt: t.AmountINR,
-        issue: '"' + t.RefType + '" is not a valid RefType. Valid: ' + VALID_REF_TYPES.join(', ')
-      });
-      return; // skip further checks for this row
-    }
-
-    // ── Check: PaymentID not in Payments ───────────────
-    if (!payment) {
-      issues.push({
-        type: 'Type 1 — Orphan Transaction', severity: 'High',
-        paymentDate: t.PaymentDate || '—', paymentDesc: '(Payment not found)',
-        paymentAmt: '—', refType: t.RefType, refLabel: t.RefLabel || t.RefID,
-        txnAmt: t.AmountINR,
-        issue: 'PaymentID ' + t.PaymentID + ' does not exist in Payments sheet'
-      });
-      return;
-    }
-
-    // ── Check: Duplicate PaymentID + RefID ─────────────
-    const dupeKey = t.PaymentID + '|' + t.RefID + '|' + t.RefType;
-    if (txnKeysSeen[dupeKey]) {
-      issues.push({
-        type: 'Duplicate Transaction', severity: 'High',
-        paymentDate: payment.Date, paymentDesc: payment.Description,
-        paymentAmt: payment.AmountINR, refType: t.RefType,
-        refLabel: t.RefLabel || t.RefID, txnAmt: t.AmountINR,
-        issue: 'Same Payment → ' + t.RefType + ' link exists more than once (double-tagged)'
-      });
-    }
-    txnKeysSeen[dupeKey] = true;
-
-    // ── Check: RefID existence by type ─────────────────
-    if (t.RefType === 'Invoice') {
-      if (!invoiceMap[t.RefID]) {
-        issues.push({
-          type: 'Type 1 — Orphan Link', severity: 'High',
-          paymentDate: payment.Date, paymentDesc: payment.Description,
-          paymentAmt: payment.AmountINR, refType: 'Invoice',
-          refLabel: t.RefLabel || t.RefID, txnAmt: t.AmountINR,
-          issue: 'Linked Invoice ID "' + t.RefID + '" does not exist'
-        });
-      }
-      // Direction: invoice receipts must be Inward
-      if (payment.Type === 'Outward') {
-        issues.push({
-          type: 'Type 3 — Direction Mismatch', severity: 'Medium',
-          paymentDate: payment.Date, paymentDesc: payment.Description,
-          paymentAmt: payment.AmountINR, refType: 'Invoice',
-          refLabel: t.RefLabel || invoiceMap[t.RefID]?.InvoiceNumber || t.RefID,
-          txnAmt: t.AmountINR,
-          issue: 'Invoice payment tagged to an Outward payment — should be Inward'
-        });
-      }
-
-    } else if (t.RefType === 'Expense') {
-      if (!expenseMap[t.RefID]) {
-        issues.push({
-          type: 'Type 1 — Orphan Link', severity: 'High',
-          paymentDate: payment.Date, paymentDesc: payment.Description,
-          paymentAmt: payment.AmountINR, refType: 'Expense',
-          refLabel: t.RefLabel || t.RefID, txnAmt: t.AmountINR,
-          issue: 'Linked Expense ID "' + t.RefID + '" does not exist'
-        });
-      }
-      // Direction: expenses must be Outward
-      if (payment.Type === 'Inward') {
-        issues.push({
-          type: 'Type 3 — Direction Mismatch', severity: 'Medium',
-          paymentDate: payment.Date, paymentDesc: payment.Description,
-          paymentAmt: payment.AmountINR, refType: 'Expense',
-          refLabel: t.RefLabel || t.RefID, txnAmt: t.AmountINR,
-          issue: 'Expense tagged to an Inward payment — should be Outward'
-        });
-      }
-
-    } else if (t.RefType === 'Disbursed' || t.RefType === 'Received') {
-      if (!DATA.employees.find(e => e.ID === t.RefID)) {
-        issues.push({
-          type: 'Type 1 — Orphan Link', severity: 'High',
-          paymentDate: payment.Date, paymentDesc: payment.Description,
-          paymentAmt: payment.AmountINR, refType: 'Loan',
-          refLabel: t.RefLabel || t.RefID, txnAmt: t.AmountINR,
-          issue: 'Linked Employee ID "' + t.RefID + '" not found in Employees'
-        });
-      }
-
-    } else if (t.RefType === 'LoanDeduction') {
-      if (!DATA.employees.find(e => e.ID === t.RefID)) {
-        issues.push({
-          type: 'Type 1 — Orphan Link', severity: 'High',
-          paymentDate: payment.Date, paymentDesc: payment.Description,
-          paymentAmt: payment.AmountINR, refType: 'LoanDeduction',
-          refLabel: t.RefLabel || t.RefID, txnAmt: t.AmountINR,
-          issue: 'Linked Employee ID "' + t.RefID + '" for deduction not found in Employees'
-        });
-      }
-
-    } else if (t.RefType === 'CreditCard') {
-      if (t.RefID !== 'cc-pool') {
-        issues.push({
-          type: 'Invalid CreditCard RefID', severity: 'Medium',
-          paymentDate: payment.Date, paymentDesc: payment.Description,
-          paymentAmt: payment.AmountINR, refType: 'CreditCard',
-          refLabel: t.RefID, txnAmt: t.AmountINR,
-          issue: 'CreditCard transaction RefID should be "cc-pool", got "' + t.RefID + '"'
-        });
-      }
-    }
-  });
-
-  // ── Check 4: Payment amount vs sum of tagged transactions ──
-  // For salary payments with loan deduction: payment = salary - deduction (not salary alone)
-  // LoanDeduction is a book entry — actual bank outflow = salary expense - deduction
-  DATA.payments.forEach(p => {
-    const txns = txnsByPayment[p.ID] || [];
-    if (!txns.length) return;
-
-    const payAmt = round2(parseFloat(p.AmountINR || 0));
-    const deductionAmt = round2(txns.filter(t => t.RefType === 'LoanDeduction').reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0));
-    const cashTxns = txns.filter(t => t.RefType !== 'LoanDeduction');
-    if (!cashTxns.length) return;
-
-    const taggedTotal = round2(cashTxns.reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0));
-    // Expected bank outflow = tagged cash transactions - any loan deductions
-    const expectedAmt = round2(taggedTotal - deductionAmt);
-    const diff = round2(Math.abs(payAmt - expectedAmt));
-
-    if (diff > 0.5) {
-      const deductionNote = deductionAmt > 0 ? ' (incl. ₹' + fmtNum(deductionAmt) + ' loan deduction)' : '';
-      issues.push({
-        type: 'Type 4 — Amount Mismatch', severity: diff > 1000 ? 'High' : 'Medium',
-        paymentDate: p.Date, paymentDesc: p.Description,
-        paymentAmt: payAmt, refType: p.Type,
-        refLabel: cashTxns.map(t => t.RefLabel || t.RefType).join(', '),
-        txnAmt: expectedAmt,
-        issue: 'Payment ₹' + fmtNum(payAmt) + ' ≠ Expected ₹' + fmtNum(expectedAmt) + deductionNote + ' (diff ₹' + fmtNum(diff) + ')'
-      });
-    }
-  });
-
-  // Sort: High first, then Medium, then Low, then by date
-  const sevOrder = { High: 0, Medium: 1, Low: 2 };
-  return issues.sort((a, b) =>
-    (sevOrder[a.severity] || 2) - (sevOrder[b.severity] || 2) ||
-    a.paymentDate?.localeCompare(b.paymentDate || '')
-  );
-}
-
-// ═══════════════════════════════════════════════════════
 // PROJECTS
 // ═══════════════════════════════════════════════════════
 function renderProjects() {
