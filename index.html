@@ -2048,7 +2048,7 @@ const HEADERS = {
   currencyRates: ['Currency','RateToINR'],
   employees: ['ID','Name','MonthlySalary','AnnualBonus','JoiningDate','Status','Notes'],
   settings: ['Key','Value'],
-  creditcard: ['ID','Date','SrNo','Description','Amount','BillingAmountSign','Status','Category','Subcategory','GSTRate','GSTAmount','TDSRate','TDSAmount','NetAmount','Notes'],
+  creditcard: ['ID','Date','Merchant','Category','Subcategory','Description','Currency','BaseAmount','GSTRate','GSTAmount','TDSRate','TDSAmount','TotalPayable','NetPayable','INRValue','RateUsed','Status'],
   budgetIncome: ['ID','Client','Project','Month','BudgetAmount'],
   budgetExpense: ['ID','Category','Subcategory','Month','BudgetAmount'],
   projects: ['ID','Name','ClientID','ClientName','Status','Description']
@@ -2717,7 +2717,7 @@ function rebuildPageSkeleton(page) {
     creditcard: `
       <div class="metrics-grid" id="cc-summary" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr);"></div>
       <div class="card"><div class="table-wrap"><table>
-        <thead><tr><th>Date</th><th>Sr.No.</th><th>Description</th><th>Amount</th><th>Type</th><th>Category</th><th>Subcategory</th><th>Net Amount</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Merchant</th><th>Description</th><th>Base Amount</th><th>GST</th><th>Net Payable</th><th>Category</th><th>Subcategory</th><th>Status</th><th></th></tr></thead>
         <tbody id="ccTable"><tr><td colspan="10"><div class="empty-state"><p>Loading...</p></div></td></tr></tbody>
       </table></div></div>`,
 
@@ -5722,18 +5722,16 @@ function getTotalCCPaid() {
 
 function renderCreditCard() {
   const entries = DATA.creditcard;
-  const debits = entries.filter(e => (e.BillingAmountSign || '').trim().toUpperCase() !== 'CR');
-  const credits = entries.filter(e => (e.BillingAmountSign || '').trim().toUpperCase() === 'CR');
-  const totalDebit = debits.reduce((s, e) => s + parseFloat(e.Amount || 0), 0);
-  const totalCredit = credits.reduce((s, e) => s + parseFloat(e.Amount || 0), 0);
+  const totalBase = entries.reduce((s, e) => s + parseFloat(e.BaseAmount || 0), 0);
+  const totalNet = entries.reduce((s, e) => s + parseFloat(e.NetPayable || e.BaseAmount || 0), 0);
   const totalCCPaid = getTotalCCPaid();
-  const untagged = entries.filter(e => e.Status === 'Untagged' || !e.Category);
+  const untagged = entries.filter(e => !e.Category || e.Status === 'Untagged');
 
   const summaryEl = document.getElementById('cc-summary');
   if (summaryEl) {
     summaryEl.innerHTML =
-      '<div class="metric-card"><div class="metric-label">Total Debits</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(totalDebit) + '</div><div class="metric-sub">' + debits.length + ' transactions</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Total Credits (CR)</div><div class="metric-value text-success" style="font-size:18px;">₹' + fmtNum(totalCredit) + '</div><div class="metric-sub">' + credits.length + ' reversals</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Total Base Amount</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(totalBase) + '</div><div class="metric-sub">' + entries.length + ' transactions</div></div>' +
+      '<div class="metric-card"><div class="metric-label">Total Net Payable</div><div class="metric-value" style="font-size:18px;">₹' + fmtNum(totalNet) + '</div><div class="metric-sub">After GST &amp; TDS</div></div>' +
       '<div class="metric-card"><div class="metric-label">Bank Payments Made</div><div class="metric-value" style="font-size:18px;">₹' + fmtNum(totalCCPaid) + '</div><div class="metric-sub">Tagged as CC in payments</div></div>' +
       '<div class="metric-card"><div class="metric-label">Needs Tagging</div><div class="metric-value ' + (untagged.length > 0 ? 'text-warning' : 'text-success') + '" style="font-size:18px;">' + untagged.length + '</div><div class="metric-sub">Uncategorised entries</div></div>';
   }
@@ -5744,23 +5742,24 @@ function renderCreditCard() {
   const sorted = [...entries].sort((a, b) => parseLocalDate(b.Date) - parseLocalDate(a.Date));
 
   if (!sorted.length) {
-    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">🃏</div><p>No credit card entries yet. Upload your CC statement using the ↑ Upload CC Statement button.</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><div class="icon">💳</div><p>No credit card entries yet. Upload your CC statement using the ↑ Upload CC Statement button.</p></div></td></tr>';
     return;
   }
 
   tbody.innerHTML = sorted.map(e => {
-    const isCR = (e.BillingAmountSign || '').trim().toUpperCase() === 'CR';
     const isTagged = e.Category && e.Status !== 'Untagged';
-    const netAmt = parseFloat(e.NetAmount || e.Amount || 0);
+    const baseAmt = parseFloat(e.BaseAmount || 0);
+    const gstAmt = parseFloat(e.GSTAmount || 0);
+    const netAmt = parseFloat(e.NetPayable || baseAmt);
     return '<tr>' +
       '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(e.Date) + '</td>' +
-      '<td style="font-size:11px;color:var(--text-hint);">' + (e.SrNo || '—') + '</td>' +
-      '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (e.Description||'') + '">' + (e.Description || '—') + '</td>' +
-      '<td class="text-right ' + (isCR ? 'text-success' : 'text-danger') + '">₹' + fmtNum(e.Amount) + '</td>' +
-      '<td>' + (isCR ? '<span class="badge badge-success">CR</span>' : '<span class="badge badge-warning">DR</span>') + '</td>' +
+      '<td style="font-size:12px;font-weight:500;">' + (e.Merchant || '—') + '</td>' +
+      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text-muted);" title="' + (e.Description||'') + '">' + (e.Description || '—') + '</td>' +
+      '<td class="text-right">₹' + fmtNum(baseAmt) + '</td>' +
+      '<td class="text-right" style="font-size:12px;color:var(--text-muted);">' + (gstAmt ? '₹' + fmtNum(gstAmt) : '—') + '</td>' +
+      '<td class="text-right text-danger">₹' + fmtNum(netAmt) + '</td>' +
       '<td style="font-size:12px;">' + (e.Category || '<span style="color:var(--text-hint);">—</span>') + '</td>' +
       '<td style="font-size:12px;color:var(--text-muted);">' + (e.Subcategory || '—') + '</td>' +
-      '<td class="text-right">' + (netAmt ? '₹' + fmtNum(netAmt) : '—') + '</td>' +
       '<td>' + (isTagged ? '<span class="badge badge-success">Tagged</span>' : '<span class="badge badge-warning">Needs Tagging</span>') + '</td>' +
       '<td><div style="display:flex;gap:4px;justify-content:flex-end;">' +
         '<button class="btn btn-sm btn-primary" data-id="' + e.ID + '" onclick="openCCTagModal(this.dataset.id)">Tag</button>' +
@@ -5778,8 +5777,7 @@ function openCCTagModal(id) {
   if (!entry) return;
   ccTaggingId = id;
 
-  const isCR = (entry.BillingAmountSign || '').trim().toUpperCase() === 'CR';
-  const amount = parseFloat(entry.Amount || 0);
+  const baseAmount = parseFloat(entry.BaseAmount || 0);
 
   // Build modal on the fly
   const existing = document.getElementById('ccTagModal');
@@ -5801,14 +5799,14 @@ function openCCTagModal(id) {
   overlay.innerHTML =
     '<div class="modal" style="max-width:500px;">' +
       '<div class="modal-header">' +
-        '<h3>' + (isCR ? '↑ CR — Tag Refund/Credit' : '↓ DR — Tag Expense') + '</h3>' +
+        '<h3>Tag CC Entry</h3>' +
         '<button class="btn btn-sm" onclick="document.getElementById(\'ccTagModal\').remove()">✕</button>' +
       '</div>' +
       '<div class="modal-body">' +
         '<div style="background:var(--bg-secondary);border-radius:var(--radius);padding:10px 14px;margin-bottom:16px;font-size:13px;">' +
-          '<strong>' + (entry.Description || '—') + '</strong>' +
-          '<span style="float:right;' + (isCR ? 'color:var(--success)' : 'color:var(--danger)') + ';">₹' + fmtNum(amount) + (isCR ? ' CR' : ' DR') + '</span>' +
-          '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + fmtDate(entry.Date) + (entry.SrNo ? ' · ' + entry.SrNo : '') + '</div>' +
+          '<strong>' + (entry.Merchant || '—') + '</strong>' +
+          '<span style="float:right;color:var(--danger);">₹' + fmtNum(baseAmount) + '</span>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + fmtDate(entry.Date) + (entry.Description ? ' · ' + entry.Description : '') + '</div>' +
         '</div>' +
         '<div class="form-grid">' +
           '<div class="form-group"><label>Category *</label>' +
@@ -5821,16 +5819,15 @@ function openCCTagModal(id) {
               '<option value="">Select subcategory...</option>' + subOptions +
             '</select>' +
           '</div>' +
-          (isCR ? '' :
-          '<div class="form-group"><label>GST Rate (%)</label><input type="number" id="cc-tag-gst" value="' + (entry.GSTRate || 0) + '" min="0" oninput="calcCCTag(' + amount + ')"></div>' +
-          '<div class="form-group"><label>TDS Rate (%)</label><input type="number" id="cc-tag-tds" value="' + (entry.TDSRate || 0) + '" min="0" oninput="calcCCTag(' + amount + ')"></div>' +
+          '<div class="form-group"><label>GST Rate (%)</label><input type="number" id="cc-tag-gst" value="' + (entry.GSTRate || 0) + '" min="0" oninput="calcCCTag(' + baseAmount + ')"></div>' +
+          '<div class="form-group"><label>TDS Rate (%)</label><input type="number" id="cc-tag-tds" value="' + (entry.TDSRate || 0) + '" min="0" oninput="calcCCTag(' + baseAmount + ')"></div>' +
           '<div class="form-group full" id="cc-tag-breakdown" style="background:var(--bg-secondary);border-radius:var(--radius);padding:10px 14px;font-size:12px;">' +
-            '<div class="breakdown-row"><span>Base Amount</span><span>₹' + fmtNum(amount) + '</span></div>' +
+            '<div class="breakdown-row"><span>Base Amount</span><span>₹' + fmtNum(baseAmount) + '</span></div>' +
             '<div class="breakdown-row"><span>+ GST</span><span id="cc-tag-gst-amt">—</span></div>' +
             '<div class="breakdown-row"><span>− TDS</span><span id="cc-tag-tds-amt">—</span></div>' +
-            '<div class="breakdown-row total"><span>Net Payable</span><span id="cc-tag-net">₹' + fmtNum(amount) + '</span></div>' +
-          '</div>') +
-          '<div class="form-group full"><label>Notes</label><input type="text" id="cc-tag-notes" value="' + (entry.Notes || '') + '" placeholder="Optional"></div>' +
+            '<div class="breakdown-row total"><span>Net Payable</span><span id="cc-tag-net">₹' + fmtNum(baseAmount) + '</span></div>' +
+          '</div>' +
+          '<div class="form-group full"><label>Description</label><input type="text" id="cc-tag-desc" value="' + (entry.Description || '') + '" placeholder="Optional"></div>' +
         '</div>' +
       '</div>' +
       '<div class="modal-footer">' +
@@ -5844,7 +5841,7 @@ function openCCTagModal(id) {
 
   // Pre-select subcategory if category already set
   if (entry.Category) onCCTagCatChange(entry.Subcategory);
-  calcCCTag(amount);
+  calcCCTag(baseAmount);
 }
 
 function onCCTagCatChange(preselect) {
@@ -5875,14 +5872,14 @@ async function saveCCTag() {
   const subcat = document.getElementById('cc-tag-subcat')?.value;
   if (!cat || !subcat) { showToast('Category and subcategory are required'); return; }
 
-  const isCR = (entry.BillingAmountSign || '').trim().toUpperCase() === 'CR';
-  const base = parseFloat(entry.Amount || 0);
+  const base = parseFloat(entry.BaseAmount || 0);
   const gstRate = parseFloat(document.getElementById('cc-tag-gst')?.value) || 0;
   const tdsRate = parseFloat(document.getElementById('cc-tag-tds')?.value) || 0;
   const gstAmt = round2(base * gstRate / 100);
   const tdsAmt = round2(base * tdsRate / 100);
-  const net = isCR ? base : round2(base + gstAmt - tdsAmt);
-  const notes = document.getElementById('cc-tag-notes')?.value || '';
+  const totalPayable = round2(base + gstAmt);
+  const netPayable = round2(base + gstAmt - tdsAmt);
+  const desc = document.getElementById('cc-tag-desc')?.value || entry.Description || '';
 
   const saveBtn = document.getElementById('saveCCTagBtn');
   setBtnLoading(saveBtn, true);
@@ -5890,9 +5887,9 @@ async function saveCCTag() {
   try {
     const idx = DATA.creditcard.indexOf(entry);
     const row = [
-      entry.ID, entry.Date, entry.SrNo, entry.Description,
-      entry.Amount, entry.BillingAmountSign, 'Tagged',
-      cat, subcat, gstRate, gstAmt, tdsRate, tdsAmt, net, notes
+      entry.ID, entry.Date, entry.Merchant, cat, subcat, desc,
+      entry.Currency || 'INR', base, gstRate, gstAmt, tdsRate, tdsAmt,
+      totalPayable, netPayable, entry.INRValue || netPayable, entry.RateUsed || 1, 'Tagged'
     ];
     await updateRow(SHEETS.creditcard, idx, row);
     await loadAllData();
@@ -5905,20 +5902,32 @@ async function saveCCTag() {
 
 // ── BULK UPLOAD CC STATEMENT ────────────────────────────
 async function bulkSaveCCEntry(row, rowNum, errors) {
-  // Expected columns: Date, Sr.No., Transaction Details, Amount(in Rs), BillingAmountSign
+  // Expected columns: Date, Merchant, Category, Subcategory, Description, Currency, BaseAmount, GSTRate, GSTAmount, TDSRate, TDSAmount, TotalPayable, NetPayable, INRValue, RateUsed, Status
   const dateRaw = row['Date'];
-  const srNo = (row['Sr.No.'] || row['SrNo'] || row['SR.NO.'] || '').toString().trim();
-  const desc = (row['Transaction Details'] || row['Description'] || '').toString().trim();
-  const amount = parseFloat((row['Amount(in Rs)'] || row['Amount'] || '0').toString().replace(/[,₹]/g,'')) || 0;
-  const sign = (row['BillingAmountSign'] || '').toString().trim().toUpperCase();
+  const merchant = (row['Merchant'] || '').toString().trim();
+  const category = (row['Category'] || '').toString().trim();
+  const subcategory = (row['Subcategory'] || '').toString().trim();
+  const desc = (row['Description'] || '').toString().trim();
+  const currency = (row['Currency'] || 'INR').toString().trim();
+  const baseAmount = parseFloat((row['BaseAmount'] || row['Base Amount'] || '0').toString().replace(/[,₹]/g,'')) || 0;
+  const gstRate = parseFloat(row['GSTRate'] || row['GST Rate'] || 0) || 0;
+  const gstAmt = parseFloat(row['GSTAmount'] || row['GST Amount'] || 0) || round2(baseAmount * gstRate / 100);
+  const tdsRate = parseFloat(row['TDSRate'] || row['TDS Rate'] || 0) || 0;
+  const tdsAmt = parseFloat(row['TDSAmount'] || row['TDS Amount'] || 0) || round2(baseAmount * tdsRate / 100);
+  const totalPayable = parseFloat(row['TotalPayable'] || 0) || round2(baseAmount + gstAmt);
+  const netPayable = parseFloat(row['NetPayable'] || 0) || round2(baseAmount + gstAmt - tdsAmt);
+  const inrValue = parseFloat(row['INRValue'] || 0) || netPayable;
+  const rateUsed = parseFloat(row['RateUsed'] || 1) || 1;
+  const status = (row['Status'] || (category ? 'Paid' : 'Untagged')).toString().trim();
 
   const date = excelDateToString(dateRaw);
   if (!date) { errors.push('Row ' + rowNum + ': Date is required'); return; }
-  if (!amount) { errors.push('Row ' + rowNum + ': Amount is required'); return; }
+  if (!baseAmount) { errors.push('Row ' + rowNum + ': BaseAmount is required'); return; }
 
   await appendRow(SHEETS.creditcard, [
-    genId(), date, srNo, desc, amount, sign, 'Untagged',
-    '', '', 0, 0, 0, 0, amount, ''
+    genId(), date, merchant, category, subcategory, desc,
+    currency, baseAmount, gstRate, gstAmt, tdsRate, tdsAmt,
+    totalPayable, netPayable, inrValue, rateUsed, status
   ]);
 }
 
