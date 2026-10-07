@@ -5282,7 +5282,7 @@ function getLoanIntegrityIssues() {
   const issues = [];
   DATA.payments.forEach(p => {
     if (!p.ID) return;
-    const txns = DATA.transactions.filter(t => t.PaymentID === p.ID && t.RefType === 'Loan');
+    const txns = DATA.transactions.filter(t => t.PaymentID === p.ID && (t.RefType === 'Loan' || t.RefType === 'Disbursed' || t.RefType === 'Received' || t.RefType === 'LoanDeduction'));
     txns.forEach(t => {
       const loan = DATA.loans.find(l => l.ID === t.RefID);
       if (!loan) return;
@@ -5318,7 +5318,7 @@ function getPaymentIntegrityIssues() {
     if (txns.length > 0) {
       // Check 2: Amount mismatch — skip if payment includes a Loan adjustment
       // (loan transactions record loan balance, not the cash split amount)
-      const hasLoanTxn = txns.some(t => t.RefType === 'Loan');
+      const hasLoanTxn = txns.some(t => t.RefType === 'Loan' || t.RefType === 'Disbursed' || t.RefType === 'Received' || t.RefType === 'LoanDeduction');
       if (!hasLoanTxn) {
         const txnTotal = txns.reduce((s, t) => s + parseFloat(t.AmountINR || t.Amount || 0), 0);
         const payAmt = parseFloat(p.AmountINR || 0);
