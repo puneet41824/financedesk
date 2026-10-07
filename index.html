@@ -6506,6 +6506,7 @@ function buildCompareTable(rows, col1Label, col2Label, months, curMonth, getCell
       } else if (!isPast) {
         cellStyle = 'color:var(--text-muted);';
       }
+      
 
       html += '<td title="' + tooltip + '" style="' + cellStyle + '">' +
         (display ? '₹' + fmtNum(display) : '<span style="color:var(--text-hint);">—</span>') + '</td>';
