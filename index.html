@@ -5298,7 +5298,7 @@ function getLoanIntegrityIssues() {
           paymentAmt: p.AmountINR,
           refType: 'Loan',
           empName: loan.EmployeeName || loan.Name || t.RefID,
-          txnAmt: t.Amount,
+          txnAmt: parseFloat(t.AmountINR || t.Amount || 0),
           issue: 'Payment is ' + p.Type + ' but loan direction is "' + actualDir + '" (expected "' + expectedDir + '")'
         });
       }
@@ -5313,73 +5313,59 @@ function getPaymentIntegrityIssues() {
     if (!p.ID) return;
     const txns = DATA.transactions.filter(t => t.PaymentID === p.ID);
 
-    // Check 1: Payment has no transactions at all (and not a loan type)
-    if (txns.length === 0 && p.Type !== 'Loan') {
-      issues.push({
-        type: 'No Transactions',
-        severity: 'Medium',
-        paymentDate: p.Date,
-        paymentDesc: p.Description,
-        paymentAmt: p.AmountINR,
-        refType: '—',
-        refLabel: '—',
-        txnAmt: '—',
-        issue: 'Payment has no tagged transactions'
-      });
-      return;
-    }
-
-    // Check 2: Sum of tagged amounts doesn't match payment amount
-    const txnTotal = txns.reduce((s, t) => s + parseFloat(t.Amount || 0), 0);
-    const payAmt = parseFloat(p.AmountINR || 0);
-    if (payAmt > 0 && Math.abs(txnTotal - payAmt) > 1) {
-      issues.push({
-        type: 'Amount Mismatch',
-        severity: 'High',
-        paymentDate: p.Date,
-        paymentDesc: p.Description,
-        paymentAmt: payAmt,
-        refType: txns.map(t => t.RefType).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '—',
-        refLabel: txns.length + ' transaction(s)',
-        txnAmt: txnTotal,
-        issue: 'Tagged total ₹' + fmtNum(txnTotal) + ' ≠ payment ₹' + fmtNum(payAmt)
-      });
-    }
-
-    // Check 3: Transaction references a non-existent invoice/expense
-    txns.forEach(t => {
-      if (t.RefType === 'Invoice') {
-        const inv = DATA.invoices.find(i => i.ID === t.RefID);
-        if (!inv) {
-          issues.push({
-            type: 'Broken Link',
-            severity: 'High',
-            paymentDate: p.Date,
-            paymentDesc: p.Description,
-            paymentAmt: p.AmountINR,
-            refType: 'Invoice',
-            refLabel: t.RefID,
-            txnAmt: t.Amount,
-            issue: 'Linked invoice ID not found'
-          });
-        }
-      } else if (t.RefType === 'Expense') {
-        const exp = DATA.expenses.find(e => e.ID === t.RefID);
-        if (!exp) {
-          issues.push({
-            type: 'Broken Link',
-            severity: 'High',
-            paymentDate: p.Date,
-            paymentDesc: p.Description,
-            paymentAmt: p.AmountINR,
-            refType: 'Expense',
-            refLabel: t.RefID,
-            txnAmt: t.Amount,
-            issue: 'Linked expense ID not found'
-          });
-        }
+    // Check 2: Sum of tagged amounts doesn't match payment amount (only for tagged payments)
+    if (txns.length > 0) {
+      const txnTotal = txns.reduce((s, t) => s + parseFloat(t.AmountINR || t.Amount || 0), 0);
+      const payAmt = parseFloat(p.AmountINR || 0);
+      if (payAmt > 0 && Math.abs(txnTotal - payAmt) > 1) {
+        issues.push({
+          type: 'Amount Mismatch',
+          severity: 'High',
+          paymentDate: p.Date,
+          paymentDesc: p.Description,
+          paymentAmt: payAmt,
+          refType: txns.map(t => t.RefType).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '—',
+          refLabel: txns.length + ' transaction(s)',
+          txnAmt: txnTotal,
+          issue: 'Tagged total ₹' + fmtNum(txnTotal) + ' ≠ payment ₹' + fmtNum(payAmt)
+        });
       }
-    });
+
+      // Check 3: Transaction references a non-existent invoice/expense
+      txns.forEach(t => {
+        if (t.RefType === 'Invoice') {
+          const inv = DATA.invoices.find(i => i.ID === t.RefID);
+          if (!inv) {
+            issues.push({
+              type: 'Broken Link',
+              severity: 'High',
+              paymentDate: p.Date,
+              paymentDesc: p.Description,
+              paymentAmt: p.AmountINR,
+              refType: 'Invoice',
+              refLabel: t.RefID,
+              txnAmt: parseFloat(t.AmountINR || t.Amount || 0),
+              issue: 'Linked invoice ID not found'
+            });
+          }
+        } else if (t.RefType === 'Expense') {
+          const exp = DATA.expenses.find(e => e.ID === t.RefID);
+          if (!exp) {
+            issues.push({
+              type: 'Broken Link',
+              severity: 'High',
+              paymentDate: p.Date,
+              paymentDesc: p.Description,
+              paymentAmt: p.AmountINR,
+              refType: 'Expense',
+              refLabel: t.RefID,
+              txnAmt: parseFloat(t.AmountINR || t.Amount || 0),
+              issue: 'Linked expense ID not found'
+            });
+          }
+        }
+      });
+    }
   });
   return issues;
 }
@@ -6506,7 +6492,6 @@ function buildCompareTable(rows, col1Label, col2Label, months, curMonth, getCell
       } else if (!isPast) {
         cellStyle = 'color:var(--text-muted);';
       }
-      
 
       html += '<td title="' + tooltip + '" style="' + cellStyle + '">' +
         (display ? '₹' + fmtNum(display) : '<span style="color:var(--text-hint);">—</span>') + '</td>';
