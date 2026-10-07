@@ -5819,6 +5819,55 @@ function getTotalCCPaid() {
     .reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
 }
 
+function showCCPaymentsPopup() {
+  const txns = DATA.transactions.filter(t => t.RefType === 'CreditCard');
+  const total = txns.reduce((s, t) => s + parseFloat(t.AmountINR || 0), 0);
+
+  const rows = txns.sort((a, b) => parseLocalDate(b.PaymentDate || b.Date) - parseLocalDate(a.PaymentDate || a.Date));
+
+  const overlay = document.createElement('div');
+  overlay.className = 'drilldown-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+  overlay.innerHTML =
+    '<div style="background:var(--bg-primary);border-radius:var(--radius-lg);width:700px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+      '<div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">' +
+        '<div>' +
+          '<div style="font-size:16px;font-weight:600;color:var(--text-primary);">Bank Payments to Credit Card</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Payments tagged as CreditCard in your transactions</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:16px;">' +
+          '<div style="text-align:right;"><div style="font-size:11px;color:var(--text-muted);">Total</div><div style="font-size:18px;font-weight:700;color:var(--primary);">₹' + fmtNum(total) + '</div></div>' +
+          '<button onclick="this.closest(\'.drilldown-overlay\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);padding:4px;">×</button>' +
+        '</div>' +
+      '</div>' +
+      '<div style="overflow-y:auto;flex:1;">' +
+        (rows.length === 0
+          ? '<div class="empty-state" style="padding:40px;"><p>No bank payments tagged as Credit Card yet.</p></div>'
+          : '<table style="width:100%;border-collapse:collapse;">' +
+            '<thead><tr style="background:var(--bg-secondary);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">' +
+              '<th style="padding:10px 16px;text-align:left;">Date</th>' +
+              '<th style="padding:10px 16px;text-align:left;">Payment Description</th>' +
+              '<th style="padding:10px 16px;text-align:right;">Amount</th>' +
+            '</tr></thead>' +
+            '<tbody>' +
+            rows.map((t, i) => {
+              const pmt = DATA.payments.find(p => p.ID === t.PaymentID);
+              return '<tr style="border-bottom:1px solid var(--border);' + (i % 2 === 0 ? '' : 'background:var(--bg-secondary);') + '">' +
+                '<td style="padding:10px 16px;font-size:12px;color:var(--text-muted);white-space:nowrap;">' + fmtDate(t.PaymentDate || (pmt && pmt.Date) || '') + '</td>' +
+                '<td style="padding:10px 16px;font-size:13px;">' + (pmt ? pmt.Description : (t.RefLabel || t.PaymentID || '—')) + '</td>' +
+                '<td style="padding:10px 16px;text-align:right;font-weight:600;color:var(--primary);">₹' + fmtNum(t.AmountINR) + '</td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody></table>'
+        ) +
+      '</div>' +
+    '</div>';
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
 function renderCreditCard() {
   const entries = DATA.creditcard;
   const totalBase = entries.reduce((s, e) => s + parseFloat(e.BaseAmount || 0), 0);
@@ -5831,7 +5880,7 @@ function renderCreditCard() {
     summaryEl.innerHTML =
       '<div class="metric-card"><div class="metric-label">Total Base Amount</div><div class="metric-value text-danger" style="font-size:18px;">₹' + fmtNum(totalBase) + '</div><div class="metric-sub">' + entries.length + ' transactions</div></div>' +
       '<div class="metric-card"><div class="metric-label">Total Net Payable</div><div class="metric-value" style="font-size:18px;">₹' + fmtNum(totalNet) + '</div><div class="metric-sub">After GST &amp; TDS</div></div>' +
-      '<div class="metric-card"><div class="metric-label">Bank Payments Made</div><div class="metric-value" style="font-size:18px;">₹' + fmtNum(totalCCPaid) + '</div><div class="metric-sub">Tagged as CC in payments</div></div>' +
+      '<div class="metric-card" style="cursor:pointer;" onclick="showCCPaymentsPopup()"><div class="metric-label">Bank Payments Made</div><div class="metric-value" style="font-size:18px;">₹' + fmtNum(totalCCPaid) + '</div><div class="metric-sub" style="color:var(--primary);">Tagged as CC in payments ↗</div></div>' +
       '<div class="metric-card"><div class="metric-label">Needs Tagging</div><div class="metric-value ' + (untagged.length > 0 ? 'text-warning' : 'text-success') + '" style="font-size:18px;">' + untagged.length + '</div><div class="metric-sub">Uncategorised entries</div></div>';
   }
 
