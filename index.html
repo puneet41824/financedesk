@@ -5314,24 +5314,30 @@ function getPaymentIntegrityIssues() {
     const txns = DATA.transactions.filter(t => t.PaymentID === p.ID);
 
     // Check 2: Sum of tagged amounts doesn't match payment amount (only for tagged payments)
+    // Skip if payment includes a Loan adjustment — loan transactions record the loan balance, not the split amount
     if (txns.length > 0) {
-      const txnTotal = txns.reduce((s, t) => s + parseFloat(t.AmountINR || t.Amount || 0), 0);
-      const payAmt = parseFloat(p.AmountINR || 0);
-      if (payAmt > 0 && Math.abs(txnTotal - payAmt) > 1) {
-        issues.push({
-          type: 'Amount Mismatch',
-          severity: 'High',
-          paymentDate: p.Date,
-          paymentDesc: p.Description,
-          paymentAmt: payAmt,
-          refType: txns.map(t => t.RefType).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '—',
-          refLabel: txns.length + ' transaction(s)',
-          txnAmt: txnTotal,
-          issue: 'Tagged total ₹' + fmtNum(txnTotal) + ' ≠ payment ₹' + fmtNum(payAmt)
-        });
+      // Check 2: Amount mismatch — skip if payment includes a Loan adjustment
+      // (loan transactions record loan balance, not the cash split amount)
+      const hasLoanTxn = txns.some(t => t.RefType === 'Loan');
+      if (!hasLoanTxn) {
+        const txnTotal = txns.reduce((s, t) => s + parseFloat(t.AmountINR || t.Amount || 0), 0);
+        const payAmt = parseFloat(p.AmountINR || 0);
+        if (payAmt > 0 && Math.abs(txnTotal - payAmt) > 1) {
+          issues.push({
+            type: 'Amount Mismatch',
+            severity: 'High',
+            paymentDate: p.Date,
+            paymentDesc: p.Description,
+            paymentAmt: payAmt,
+            refType: txns.map(t => t.RefType).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '—',
+            refLabel: txns.length + ' transaction(s)',
+            txnAmt: txnTotal,
+            issue: 'Tagged total ₹' + fmtNum(txnTotal) + ' ≠ payment ₹' + fmtNum(payAmt)
+          });
+        }
       }
 
-      // Check 3: Transaction references a non-existent invoice/expense
+      // Check 3: Transaction references a non-existent invoice/expense (runs for all payments)
       txns.forEach(t => {
         if (t.RefType === 'Invoice') {
           const inv = DATA.invoices.find(i => i.ID === t.RefID);
