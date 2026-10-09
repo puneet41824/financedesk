@@ -2314,7 +2314,7 @@ async function seedDefaultCurrencyRates() {
 }
 
 async function readSheet(sheetName) {
-  const data = await sheetsRequest('GET', `/values/${encodeURIComponent(sheetName)}`);
+  const data = await sheetsRequest('GET', `/values/${encodeURIComponent(sheetName)}?valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`);
   const rows = data.values || [];
   if (rows.length < 2) return [];
   const headers = rows[0];
