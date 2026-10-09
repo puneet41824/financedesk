@@ -4526,9 +4526,10 @@ function renderPL() {
   });
 
   // CC expenses — tag each with _isCc so drilldown can distinguish
+  // Include refunds (negative BaseAmount) so they net off against expenses in P&L
   const ccExpenses = (DATA.creditcard || []).filter(e => {
     const d = parseLocalDate(e.Date);
-    return d >= fromDate && d <= toDate && parseFloat(e.BaseAmount || 0) > 0;
+    return d >= fromDate && d <= toDate && parseFloat(e.BaseAmount || 0) !== 0;
   }).map(e => ({ ...e, _isCc: true, Vendor: e.Vendor || e.Merchant }));
 
   const allExpenses = [...expenses, ...ccExpenses];
