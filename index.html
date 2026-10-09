@@ -4525,13 +4525,23 @@ function renderPL() {
     return d >= fromDate && d <= toDate;
   });
 
+  // CC expenses — tag each with _isCc so drilldown can distinguish
+  const ccExpenses = (DATA.creditcard || []).filter(e => {
+    const d = parseLocalDate(e.Date);
+    return d >= fromDate && d <= toDate && parseFloat(e.BaseAmount || 0) > 0;
+  }).map(e => ({ ...e, _isCc: true, Vendor: e.Vendor || e.Merchant }));
+
+  const allExpenses = [...expenses, ...ccExpenses];
+
   // Convert each invoice's base amount to INR using the same rate that was locked at entry time
   // (INRValue / NetReceivable gives the effective rate, since NetReceivable already includes tax/TDS proportionally)
   const revenue = invoices.reduce((s, i) => s + invoiceBaseInINR(i), 0);
   const futureRev = inclFuture ? DATA.receivables.reduce((s, r) => s + (parseFloat(r.Amount || 0) * getRate(r.Currency)), 0) : 0;
   const totalRev = revenue + futureRev;
 
-  const totalExp = expenses.reduce((s, e) => s + expenseBaseInINR(e), 0);
+  const totalDirectExp = expenses.reduce((s, e) => s + expenseBaseInINR(e), 0);
+  const totalCcExp = ccExpenses.reduce((s, e) => s + expenseBaseInINR(e), 0);
+  const totalExp = totalDirectExp + totalCcExp;
   const netPL = totalRev - totalExp;
 
   document.getElementById('plMetrics').innerHTML = `
@@ -4543,6 +4553,10 @@ function renderPL() {
     <div class="metric-card">
       <div class="metric-label">Total Expenses</div>
       <div class="metric-value text-danger">₹${fmtNum2(totalExp)}</div>
+      <div class="metric-sub" style="margin-top:6px;line-height:1.6;">
+        <span style="display:flex;justify-content:space-between;"><span>Direct</span><span>₹${fmtNum2(totalDirectExp)}</span></span>
+        <span style="display:flex;justify-content:space-between;"><span>Credit Card</span><span>₹${fmtNum2(totalCcExp)}</span></span>
+      </div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Net P&L</div>
@@ -4578,13 +4592,13 @@ function renderPL() {
     (inclFuture && futureRev ? '<div class="breakdown-row" style="color:var(--warning);"><span>Future receivables</span><span>₹' + fmtNum2(futureRev) + '</span></div>' : '') +
     '<div class="breakdown-row total"><span>Total</span><span>₹' + fmtNum2(totalRev) + '</span></div>';
 
-  // Expense breakdown — clickable by category
+  // Expense breakdown — clickable by category (direct + CC merged)
   const expByCat = {};
-  expenses.forEach(e => {
+  allExpenses.forEach(e => {
     expByCat[e.Category] = (expByCat[e.Category] || 0) + expenseBaseInINR(e);
   });
   const expByCatFull = {};
-  expenses.forEach(e => {
+  allExpenses.forEach(e => {
     if (!expByCatFull[e.Category]) expByCatFull[e.Category] = [];
     expByCatFull[e.Category].push(e);
   });
@@ -5692,12 +5706,13 @@ function showExpenseDrilldown(categoryName, expenses) {
     const rightRows = bySubcat[selectedSubcat].map(e =>
       '<tr>' +
       '<td style="font-size:12px;color:var(--text-muted);">' + fmtDate(e.Date) + '</td>' +
-      '<td>' + (e.Description || '—') + '</td>' +
-      '<td style="color:var(--text-muted);">' + (e.Vendor || '—') + '</td>' +
+      '<td>' + (e.Description || e.Merchant || '—') + '</td>' +
+      '<td style="color:var(--text-muted);">' + (e.Vendor || e.Merchant || '—') + '</td>' +
       '<td class="text-right">₹' + fmtNum2(expenseBaseInINR(e)) + '</td>' +
       '<td class="text-right text-success">' + (parseFloat(e.GSTAmount||0) ? '₹'+fmtNum2(e.GSTAmount) : '—') + '</td>' +
       '<td class="text-right text-danger">' + (parseFloat(e.TDSAmount||0) ? '₹'+fmtNum2(e.TDSAmount) : '—') + '</td>' +
       '<td>' + statusBadge(e.Status) + '</td>' +
+      '<td>' + (e._isCc ? '<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--info,#3b82f6);color:#fff;font-weight:500;">CC</span>' : '<span style="font-size:10px;padding:2px 6px;border-radius:10px;background:var(--text-muted,#888);color:#fff;font-weight:500;">Direct</span>') + '</td>' +
       '</tr>'
     ).join('');
 
@@ -5718,7 +5733,7 @@ function showExpenseDrilldown(categoryName, expenses) {
           '<div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px;">' +
             selectedSubcat + ' — ₹' + fmtNum2(subcatTotal) + '</div>' +
           '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
-            '<thead><tr><th>Date</th><th>Description</th><th>Vendor</th><th>Amount</th><th>GST</th><th>TDS</th><th>Status</th></tr></thead>' +
+            '<thead><tr><th>Date</th><th>Description</th><th>Vendor</th><th>Amount</th><th>GST</th><th>TDS</th><th>Status</th><th>Source</th></tr></thead>' +
             '<tbody>' + rightRows + '</tbody>' +
           '</table>' +
         '</div>' +
