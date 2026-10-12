@@ -823,6 +823,7 @@
 
   .amount-positive { color: var(--success); font-weight: 500; }
   .amount-negative { color: var(--danger); font-weight: 500; }
+  .loan-emp-row:hover { background: var(--bg-secondary, #f3f4f6); }
 </style>
 </head>
 <body>
@@ -5015,7 +5016,7 @@ function renderLoans() {
   const checkboxContainer = document.getElementById('loanEmpCheckboxes');
   if (checkboxContainer && checkboxContainer.children.length === 0) {
     checkboxContainer.innerHTML = DATA.loans.map(l =>
-      '<label style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;font-size:12px;white-space:nowrap;transition:background 0.1s;" onmouseover="this.style.background='var(--bg-hover,#f3f4f6)'" onmouseout="this.style.background=''">' +
+      '<label class="loan-emp-row" style="display:flex;align-items:center;gap:8px;padding:5px 10px;cursor:pointer;font-size:12px;white-space:nowrap;">' +
       '<input type="checkbox" value="' + l.EmployeeID + '" onchange="updateLoanEmpBtnLabel();renderLoans()" style="width:13px;height:13px;flex-shrink:0;cursor:pointer;accent-color:var(--primary,#6366f1);"> ' +
       '<span style="white-space:nowrap;">' + (l.EmployeeName || l.EmployeeID) + '</span></label>'
     ).join('');
@@ -6812,7 +6813,6 @@ function exportExpensesToBudgetFormat() {
   showToast('Downloaded: ExpenseTrend_BudgetFormat.xlsx');
 }
 
-  
 // App ready
 </script>
 </body>
