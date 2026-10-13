@@ -2843,6 +2843,12 @@ function showAccessDenied() {
 
 // ═══════════════════════════════════════════════════════
 // BULK UPLOAD & TEMPLATES
+// Helper: parse a number from a cell that may be formatted as "₹1,00,000" or "1,00,000" or plain 100000
+function parseNumCell(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') return val;
+  return parseFloat(val.toString().replace(/[₹$,\s]/g, '')) || 0;
+}
 // ═══════════════════════════════════════════════════════
 
 // Template definitions - what columns the upload file should have
@@ -3015,7 +3021,7 @@ function showBulkResult(success, errors) {
 
 async function bulkSaveEmployee(row, rowNum, errors) {
   const name = (row['Name'] || '').toString().trim();
-  const salary = parseFloat(row['MonthlySalary']) || 0;
+  const salary = parseNumCell(row['MonthlySalary']);
   if (!name) { errors.push('Row ' + rowNum + ': Name is required'); return; }
   if (!salary) { errors.push('Row ' + rowNum + ': MonthlySalary is required'); return; }
 
@@ -3078,7 +3084,7 @@ async function bulkSaveClient(row, rowNum, errors) {
 async function bulkSaveInvoice(row, rowNum, errors) {
   const invNum = (row['InvoiceNumber'] || '').toString().trim();
   const clientName = (row['ClientName'] || '').toString().trim();
-  const base = parseFloat(row['BaseAmount']) || 0;
+  const base = parseNumCell(row['BaseAmount']);
   const dateRaw = row['Date'];
 
   if (!invNum) { errors.push('Row ' + rowNum + ': InvoiceNumber is required'); return false; }
@@ -3139,7 +3145,7 @@ async function bulkSaveExpense(row, rowNum, errors) {
   const dateRaw = row['Date'];
   const cat = (row['Category'] || '').toString().trim();
   const subcat = (row['Subcategory'] || '').toString().trim();
-  const base = parseFloat(row['BaseAmount']) || 0;
+  const base = parseNumCell(row['BaseAmount']);
 
   if (!cat) { errors.push('Row ' + rowNum + ': Category is required'); return; }
   if (!subcat) { errors.push('Row ' + rowNum + ': Subcategory is required'); return; }
@@ -3185,7 +3191,7 @@ async function bulkSaveExpense(row, rowNum, errors) {
 async function bulkSavePayment(row, rowNum, errors) {
   const dateRaw = row['Date'];
   const type = (row['Type'] || '').toString().trim();
-  const amount = parseFloat(row['AmountINR']) || 0;
+  const amount = parseNumCell(row['AmountINR']);
 
   if (!type) { errors.push('Row ' + rowNum + ': Type is required (Inward/Outward/Loan)'); return; }
   if (!amount) { errors.push('Row ' + rowNum + ': AmountINR is required'); return; }
